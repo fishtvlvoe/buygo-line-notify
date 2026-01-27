@@ -64,8 +64,6 @@ final class SettingsPage
 
     /**
      * 渲染設定頁面
-     *
-     * 目前為空白頁面，實際設定 UI 將在 Plan 01-04 實作。
      */
     public static function render_settings_page(): void
     {
@@ -73,35 +71,53 @@ final class SettingsPage
             \wp_die(\__('您沒有權限訪問此頁面。', 'buygo-line-notify'));
         }
 
-        $is_submenu = \class_exists('BuyGoPlus\Plugin');
-        $menu_position = $is_submenu ? '子選單（buygo-plus-one 下）' : '獨立一級選單';
+        // 處理表單提交
+        $message = '';
+        if (isset($_POST['buygo_line_settings_submit'])) {
+            $message = self::handle_form_submission();
+        }
 
-        ?>
-        <div class="wrap">
-            <h1>LINE 通知設定</h1>
-            <p>設定頁面 UI 將在下一個 Plan 實作。</p>
-            <p>目前選單位置：<strong><?php echo \esc_html($menu_position); ?></strong></p>
+        // 載入設定值
+        $settings = \BuygoLineNotify\Services\SettingsService::get_all();
 
-            <hr />
+        // 產生 Webhook URL
+        $webhook_url = \rest_url('buygo-line-notify/v1/webhook');
 
-            <h2>系統狀態</h2>
-            <table class="widefat striped">
-                <tbody>
-                    <tr>
-                        <th>父外掛（buygo-plus-one-dev）</th>
-                        <td><?php echo $is_submenu ? '<span style="color: green;">✓ 已安裝</span>' : '<span style="color: gray;">✗ 未安裝</span>'; ?></td>
-                    </tr>
-                    <tr>
-                        <th>選單類型</th>
-                        <td><?php echo \esc_html($menu_position); ?></td>
-                    </tr>
-                    <tr>
-                        <th>當前用戶權限</th>
-                        <td><?php echo \current_user_can('manage_options') ? '管理員' : '無權限'; ?></td>
-                    </tr>
-                </tbody>
-            </table>
-        </div>
-        <?php
+        // 載入視圖檔案
+        include BUYGO_LINE_NOTIFY_PLUGIN_DIR . 'includes/admin/views/settings-page.php';
+    }
+
+    /**
+     * 處理表單提交
+     */
+    private static function handle_form_submission(): string
+    {
+        // Nonce 驗證
+        if (!isset($_POST['buygo_line_settings_nonce']) ||
+            !\wp_verify_nonce($_POST['buygo_line_settings_nonce'], 'buygo_line_settings_action')) {
+            return '<div class="notice notice-error"><p>安全驗證失敗。</p></div>';
+        }
+
+        // 權限檢查
+        if (!\current_user_can('manage_options')) {
+            return '<div class="notice notice-error"><p>您沒有權限修改設定。</p></div>';
+        }
+
+        // 儲存設定（SettingsService 會自動加密）
+        $fields = [
+            'channel_access_token',
+            'channel_secret',
+            'login_channel_id',
+            'login_channel_secret',
+            'liff_id',
+            'liff_endpoint_url',
+        ];
+
+        foreach ($fields as $field) {
+            $value = isset($_POST[$field]) ? \sanitize_text_field($_POST[$field]) : '';
+            \BuygoLineNotify\Services\SettingsService::set($field, $value);
+        }
+
+        return '<div class="notice notice-success"><p>設定已儲存。</p></div>';
     }
 }
