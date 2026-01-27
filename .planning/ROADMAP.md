@@ -12,7 +12,7 @@
 
 Decimal phases appear between their surrounding integers in numeric order.
 
-- [ ] **Phase 1: 基礎設施與設定** - 資料庫結構、後台管理頁面、設定管理系統
+- [x] **Phase 1: 基礎設施與設定** - 資料庫結構、後台管理頁面、設定管理系統
 - [ ] **Phase 2: Webhook 系統** - LINE Webhook 處理、簽名驗證、事件去重、背景處理
 - [ ] **Phase 3: LINE Login 與用戶綁定** - OAuth 流程、用戶建立、帳號綁定、持久化儲存
 - [ ] **Phase 4: LIFF 整合** - LIFF 頁面、LINE 瀏覽器偵測、自動登入、Cookie 處理
@@ -39,10 +39,10 @@ Decimal phases appear between their surrounding integers in numeric order.
 **Plans**: 4 plans in 3 waves
 
 Plans:
-- [ ] 01-01-PLAN.md — 建立資料庫結構與 LINE 用戶綁定 API（混合儲存策略）
-- [ ] 01-02-PLAN.md — 實作設定加解密服務與向後相容讀取
-- [ ] 01-03-PLAN.md — 條件式後台選單整合（根據父外掛動態掛載）
-- [ ] 01-04-PLAN.md — 完整設定頁面 UI（表單、驗證、Webhook URL 複製）
+- [x] 01-01-PLAN.md — 建立資料庫結構與 LINE 用戶綁定 API（混合儲存策略）
+- [x] 01-02-PLAN.md — 實作設定加解密服務與向後相容讀取
+- [x] 01-03-PLAN.md — 條件式後台選單整合（根據父外掛動態掛載）
+- [x] 01-04-PLAN.md — 完整設定頁面 UI（表單、驗證、Webhook URL 複製）
 
 ### Phase 2: Webhook 系統
 **Goal**: 接收並處理來自 LINE 的 Webhook 事件

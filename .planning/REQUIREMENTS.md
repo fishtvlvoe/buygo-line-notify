@@ -127,22 +127,22 @@
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| DB-01 | Phase 1 | Pending |
-| DB-02 | Phase 1 | Pending |
-| DB-03 | Phase 1 | Pending |
-| ADMIN-01 | Phase 1 | Pending |
-| ADMIN-02 | Phase 1 | Pending |
-| ADMIN-03 | Phase 1 | Pending |
-| ADMIN-04 | Phase 1 | Pending |
-| ADMIN-05 | Phase 1 | Pending |
-| SETTING-01 | Phase 1 | Pending |
-| SETTING-02 | Phase 1 | Pending |
-| SETTING-03 | Phase 1 | Pending |
-| SETTING-04 | Phase 1 | Pending |
-| SETTING-05 | Phase 1 | Pending |
-| SETTING-06 | Phase 1 | Pending |
-| SETTING-07 | Phase 1 | Pending |
-| SETTING-08 | Phase 1 | Pending |
+| DB-01 | Phase 1 | Complete |
+| DB-02 | Phase 1 | Complete |
+| DB-03 | Phase 1 | Complete |
+| ADMIN-01 | Phase 1 | Complete |
+| ADMIN-02 | Phase 1 | Complete |
+| ADMIN-03 | Phase 1 | Complete |
+| ADMIN-04 | Phase 1 | Complete |
+| ADMIN-05 | Phase 1 | Complete |
+| SETTING-01 | Phase 1 | Complete |
+| SETTING-02 | Phase 1 | Complete |
+| SETTING-03 | Phase 1 | Complete |
+| SETTING-04 | Phase 1 | Complete |
+| SETTING-05 | Phase 1 | Complete |
+| SETTING-06 | Phase 1 | Complete |
+| SETTING-07 | Phase 1 | Complete |
+| SETTING-08 | Phase 1 | Complete |
 | WEBHOOK-01 | Phase 2 | Pending |
 | WEBHOOK-02 | Phase 2 | Pending |
 | WEBHOOK-03 | Phase 2 | Pending |
