@@ -54,6 +54,7 @@ final class Plugin
         include_once BuygoLineNotify_PLUGIN_DIR . 'includes/services/class-settings-service.php';
         include_once BuygoLineNotify_PLUGIN_DIR . 'includes/services/class-image-uploader.php';
         include_once BuygoLineNotify_PLUGIN_DIR . 'includes/services/class-line-messaging-service.php';
+        include_once BuygoLineNotify_PLUGIN_DIR . 'includes/services/class-line-user-service.php';
 
         // 載入 Facade（供其他外掛使用）
         include_once BuygoLineNotify_PLUGIN_DIR . 'includes/class-buygo-line-notify.php';
