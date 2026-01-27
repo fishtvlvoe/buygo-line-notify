@@ -84,7 +84,7 @@ final class SettingsPage
         $webhook_url = \rest_url('buygo-line-notify/v1/webhook');
 
         // 載入視圖檔案
-        include BUYGO_LINE_NOTIFY_PLUGIN_DIR . 'includes/admin/views/settings-page.php';
+        include BuygoLineNotify_PLUGIN_DIR . 'includes/admin/views/settings-page.php';
     }
 
     /**
