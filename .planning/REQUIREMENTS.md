@@ -125,8 +125,61 @@
 
 ## Traceability
 
-待 ROADMAP.md 建立後更新
+| Requirement | Phase | Status |
+|-------------|-------|--------|
+| DB-01 | Phase 1 | Pending |
+| DB-02 | Phase 1 | Pending |
+| DB-03 | Phase 1 | Pending |
+| ADMIN-01 | Phase 1 | Pending |
+| ADMIN-02 | Phase 1 | Pending |
+| ADMIN-03 | Phase 1 | Pending |
+| ADMIN-04 | Phase 1 | Pending |
+| ADMIN-05 | Phase 1 | Pending |
+| SETTING-01 | Phase 1 | Pending |
+| SETTING-02 | Phase 1 | Pending |
+| SETTING-03 | Phase 1 | Pending |
+| SETTING-04 | Phase 1 | Pending |
+| SETTING-05 | Phase 1 | Pending |
+| SETTING-06 | Phase 1 | Pending |
+| SETTING-07 | Phase 1 | Pending |
+| SETTING-08 | Phase 1 | Pending |
+| WEBHOOK-01 | Phase 2 | Pending |
+| WEBHOOK-02 | Phase 2 | Pending |
+| WEBHOOK-03 | Phase 2 | Pending |
+| WEBHOOK-04 | Phase 2 | Pending |
+| WEBHOOK-05 | Phase 2 | Pending |
+| WEBHOOK-06 | Phase 2 | Pending |
+| LOGIN-01 | Phase 3 | Pending |
+| LOGIN-02 | Phase 3 | Pending |
+| LOGIN-03 | Phase 3 | Pending |
+| LOGIN-04 | Phase 3 | Pending |
+| LOGIN-05 | Phase 3 | Pending |
+| LOGIN-06 | Phase 3 | Pending |
+| LOGIN-07 | Phase 3 | Pending |
+| LOGIN-08 | Phase 3 | Pending |
+| LIFF-01 | Phase 4 | Pending |
+| LIFF-02 | Phase 4 | Pending |
+| LIFF-03 | Phase 4 | Pending |
+| LIFF-04 | Phase 4 | Pending |
+| LIFF-05 | Phase 4 | Pending |
+| BUTTON-01 | Phase 5 | Pending |
+| BUTTON-02 | Phase 5 | Pending |
+| BUTTON-03 | Phase 5 | Pending |
+| BUTTON-04 | Phase 5 | Pending |
+| BUTTON-05 | Phase 5 | Pending |
+| NOTIFY-01 | Phase 6 | Pending |
+| NOTIFY-02 | Phase 6 | Pending |
+| NOTIFY-03 | Phase 6 | Pending |
+| NOTIFY-04 | Phase 6 | Pending |
+| NOTIFY-05 | Phase 6 | Pending |
+| TEST-01 | Phase 7 | Pending |
+| TEST-02 | Phase 7 | Pending |
+| TEST-03 | Phase 7 | Pending |
+| TEST-04 | Phase 7 | Pending |
+| DOC-01 | Phase 7 | Pending |
+| DOC-02 | Phase 7 | Pending |
+| DOC-03 | Phase 7 | Pending |
 
 ---
 *Requirements defined: 2026-01-28*
-*Last updated: 2026-01-28 after initial definition*
+*Last updated: 2026-01-28 after roadmap creation*
