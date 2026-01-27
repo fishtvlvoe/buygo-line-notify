@@ -58,10 +58,11 @@ Plans:
   4. 相同的 webhookEventId 只會被處理一次（事件去重機制運作正常）
   5. 其他外掛可透過 Hooks（如 `buygo_line_notify/webhook/message`）註冊並接收事件通知
 
-**Plans**: TBD
+**Plans**: 2 plans in 2 waves
 
 Plans:
-- [ ] 02-01: [TBD during planning]
+- [ ] 02-01-PLAN.md — 建立 Webhook REST API Endpoint 和事件處理器（簽名驗證、去重、Hooks）
+- [ ] 02-02-PLAN.md — 整合到外掛主流程並進行 LINE Console 驗證（含 checkpoint）
 
 ### Phase 3: LINE Login 與用戶綁定
 **Goal**: 用戶可透過 LINE 登入或綁定現有帳號
@@ -165,8 +166,8 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. 基礎設施與設定 | 0/4 | Planning complete | - |
-| 2. Webhook 系統 | 0/TBD | Not started | - |
+| 1. 基礎設施與設定 | 4/4 | ✅ Completed | 2026-01-28 |
+| 2. Webhook 系統 | 0/2 | Planning complete | - |
 | 3. LINE Login 與用戶綁定 | 0/TBD | Not started | - |
 | 4. LIFF 整合 | 0/TBD | Not started | - |
 | 5. 前台整合 | 0/TBD | Not started | - |
