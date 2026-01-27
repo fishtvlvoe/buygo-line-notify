@@ -11,28 +11,28 @@ See: .planning/PROJECT.md (updated 2026-01-28)
 ## Current Position
 
 Phase: 1 of 7 (基礎設施與設定)
-Plan: 0 of TBD in current phase
-Status: Ready to plan
-Last activity: 2026-01-28 — Roadmap created, ready to begin Phase 1 planning
+Plan: 1 of TBD in current phase
+Status: In progress
+Last activity: 2026-01-28 — Completed 01-02-PLAN.md (SettingsService 加解密)
 
-Progress: [░░░░░░░░░░] 0%
+Progress: [█░░░░░░░░░] ~14% (estimated based on Phase 1 plans)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 0
-- Average duration: - min
-- Total execution time: 0 hours
+- Total plans completed: 1
+- Average duration: 2 min
+- Total execution time: 0.03 hours
 
 **By Phase:**
 
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
-| - | - | - | - |
+| 01-基礎設施與設定 | 1 | 2 min | 2 min |
 
 **Recent Trend:**
-- Last 5 plans: -
-- Trend: Not yet established
+- Last 5 plans: 01-02 (2min)
+- Trend: Just starting
 
 *Updated after each plan completion*
 
@@ -48,6 +48,9 @@ Recent decisions affecting current work:
 - Webhook 遷移到 buygo-line-notify：基礎設施應在基礎層，業務邏輯透過 Hooks
 - 強制引導加入 LINE 官方帳號：確保可以發送 Push Message 通知
 - 使用 LIFF 解決 LINE 瀏覽器登入：避免 OAuth redirect 被阻擋
+- **01-02:** 使用 AES-128-ECB 而非 AES-256-GCM（與舊外掛相同，確保向後相容）
+- **01-02:** 解密失敗時返回原值而非拋出錯誤（避免系統中斷）
+- **01-02:** 優先讀取 buygo_line_{key}，備用 buygo_core_settings（明確讀取順序）
 
 ### Pending Todos
 
@@ -60,5 +63,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-01-28
-Stopped at: Roadmap creation complete
+Stopped at: Completed 01-02-PLAN.md (SettingsService)
 Resume file: None
