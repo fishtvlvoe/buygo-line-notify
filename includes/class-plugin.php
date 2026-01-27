@@ -2,7 +2,7 @@
 
 namespace BuygoLineNotify;
 
-use BuygoLineNotify\Admin\DemoPage;
+use BuygoLineNotify\Admin\SettingsPage;
 use BuygoLineNotify\Cron\RetryDispatcher;
 
 /**
@@ -43,7 +43,7 @@ final class Plugin
         RetryDispatcher::register_hooks();
 
         if (\is_admin()) {
-            DemoPage::register_hooks();
+            SettingsPage::register_hooks();
         }
     }
 
@@ -63,7 +63,7 @@ final class Plugin
         include_once BuygoLineNotify_PLUGIN_DIR . 'includes/cron/class-retry-dispatcher.php';
 
         if (\is_admin()) {
-            include_once BuygoLineNotify_PLUGIN_DIR . 'includes/admin/class-demo-page.php';
+            include_once BuygoLineNotify_PLUGIN_DIR . 'includes/admin/class-settings-page.php';
         }
     }
 }
