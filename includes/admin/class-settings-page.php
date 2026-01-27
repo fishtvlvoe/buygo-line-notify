@@ -16,7 +16,8 @@ final class SettingsPage
      */
     public static function register_hooks(): void
     {
-        \add_action('admin_menu', [self::class, 'add_admin_menu']);
+        // 優先級 30，確保在 buygo-plus-one (優先級 20) 之後執行
+        \add_action('admin_menu', [self::class, 'add_admin_menu'], 30);
     }
 
     /**
@@ -36,7 +37,7 @@ final class SettingsPage
         if ($parent_exists) {
             // 父外掛存在：掛載為子選單
             \error_log('BuygoLineNotify: Adding submenu under buygo-plus-one');
-            \add_submenu_page(
+            $hook = \add_submenu_page(
                 'buygo-plus-one',              // 父選單 slug
                 'LINE 串接通知',                // 頁面標題
                 'LINE 通知',                   // 選單標題
@@ -44,7 +45,7 @@ final class SettingsPage
                 'buygo-line-notify-settings',  // 選單 slug
                 [self::class, 'render_settings_page']
             );
-            \error_log('BuygoLineNotify: Submenu added');
+            \error_log('BuygoLineNotify: Submenu added, hook suffix = ' . ($hook ?: 'FALSE'));
         } else {
             // 父外掛不存在：建立獨立一級選單
             \add_menu_page(
