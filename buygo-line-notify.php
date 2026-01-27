@@ -26,5 +26,10 @@ register_activation_hook(__FILE__, function() {
     \BuygoLineNotify\Database::init();
 });
 
-\BuygoLineNotify\Plugin::instance()->init();
+// 在所有外掛載入完成後初始化（確保 buygo-plus-one 已載入）
+add_action('plugins_loaded', function() {
+    error_log('BuygoLineNotify: plugins_loaded hook fired, initializing plugin');
+    \BuygoLineNotify\Plugin::instance()->init();
+    error_log('BuygoLineNotify: Plugin initialized');
+}, 20);
 

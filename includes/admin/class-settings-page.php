@@ -27,9 +27,15 @@ final class SettingsPage
      */
     public static function add_admin_menu(): void
     {
+        \error_log('BuygoLineNotify: add_admin_menu called');
+
         // 偵測 buygo-plus-one-dev 是否存在
-        if (\class_exists('BuyGoPlus\Plugin')) {
+        $parent_exists = \class_exists('BuyGoPlus\Plugin');
+        \error_log('BuygoLineNotify: BuyGoPlus\Plugin exists = ' . ($parent_exists ? 'YES' : 'NO'));
+
+        if ($parent_exists) {
             // 父外掛存在：掛載為子選單
+            \error_log('BuygoLineNotify: Adding submenu under buygo-plus-one');
             \add_submenu_page(
                 'buygo-plus-one',              // 父選單 slug
                 'LINE 串接通知',                // 頁面標題
@@ -38,6 +44,7 @@ final class SettingsPage
                 'buygo-line-notify-settings',  // 選單 slug
                 [self::class, 'render_settings_page']
             );
+            \error_log('BuygoLineNotify: Submenu added');
         } else {
             // 父外掛不存在：建立獨立一級選單
             \add_menu_page(
@@ -67,6 +74,8 @@ final class SettingsPage
      */
     public static function render_settings_page(): void
     {
+        \error_log('BuygoLineNotify: render_settings_page called');
+        \error_log('BuygoLineNotify: current_user_can(manage_options) = ' . (\current_user_can('manage_options') ? 'YES' : 'NO'));
         if (!\current_user_can('manage_options')) {
             \wp_die(\__('您沒有權限訪問此頁面。', 'buygo-line-notify'));
         }
