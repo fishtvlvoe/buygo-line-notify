@@ -18,6 +18,9 @@ final class SettingsPage
     {
         // 優先級 30，確保在 buygo-plus-one (優先級 20) 之後執行
         \add_action('admin_menu', [self::class, 'add_admin_menu'], 30);
+
+        // AJAX handler for creating register flow page
+        \add_action('wp_ajax_buygo_line_create_register_page', [self::class, 'ajax_create_register_page']);
     }
 
     /**
@@ -121,6 +124,8 @@ final class SettingsPage
             'login_channel_secret',
             'liff_id',
             'liff_endpoint_url',
+            'login_button_position',
+            'login_button_text',
         ];
 
         foreach ($fields as $field) {
@@ -128,6 +133,48 @@ final class SettingsPage
             \BuygoLineNotify\Services\SettingsService::set($field, $value);
         }
 
+        // 處理 Register Flow Page（單獨處理，因為是 int 而非 string）
+        $register_flow_page = isset($_POST['register_flow_page']) ? \absint($_POST['register_flow_page']) : 0;
+        \update_option('buygo_line_register_flow_page', $register_flow_page);
+
         return '<div class="notice notice-success"><p>設定已儲存。</p></div>';
+    }
+
+    /**
+     * AJAX: 建立 Register Flow Page
+     */
+    public static function ajax_create_register_page(): void
+    {
+        // Nonce 驗證
+        if (!\check_ajax_referer('buygo_line_create_register_page', '_ajax_nonce', false)) {
+            \wp_send_json_error(['message' => '安全驗證失敗']);
+        }
+
+        // 權限檢查
+        if (!\current_user_can('publish_pages')) {
+            \wp_send_json_error(['message' => '您沒有權限建立頁面']);
+        }
+
+        // 建立頁面
+        $page_id = \wp_insert_post([
+            'post_title'   => 'LINE 註冊',
+            'post_content' => '[buygo_line_register_flow]',
+            'post_status'  => 'publish',
+            'post_type'    => 'page',
+        ]);
+
+        if (\is_wp_error($page_id)) {
+            \wp_send_json_error(['message' => $page_id->get_error_message()]);
+        }
+
+        // 自動設定為 Register Flow Page
+        \update_option('buygo_line_register_flow_page', $page_id);
+
+        \wp_send_json_success([
+            'page_id'    => $page_id,
+            'page_title' => 'LINE 註冊',
+            'edit_url'   => \get_edit_post_link($page_id, 'raw'),
+            'view_url'   => \get_permalink($page_id),
+        ]);
     }
 }

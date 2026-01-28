@@ -119,13 +119,121 @@ if (!defined('ABSPATH')) {
                         <label>Callback URL</label>
                     </th>
                     <td>
-                        <code><?php echo esc_url(rest_url('buygo-line-notify/v1/login/callback')); ?></code>
+                        <code id="callback-url"><?php echo esc_url(site_url('wp-login.php?loginSocial=buygo-line')); ?></code>
                         <button type="button"
                                 class="button button-secondary"
                                 onclick="copyCallbackUrl()">
                             複製
                         </button>
                         <p class="description">請將此 URL 設定到 LINE Developers Console 的 Callback URL 欄位</p>
+                    </td>
+                </tr>
+
+                <!-- Register Flow Page 選擇器 -->
+                <tr>
+                    <th scope="row">
+                        <label for="register_flow_page">LINE 註冊流程頁面</label>
+                    </th>
+                    <td>
+                        <?php
+                        $register_flow_page_id = get_option('buygo_line_register_flow_page', 0);
+                        wp_dropdown_pages([
+                            'name'              => 'register_flow_page',
+                            'id'                => 'register_flow_page',
+                            'selected'          => $register_flow_page_id,
+                            'show_option_none'  => '— 使用預設（wp-login.php）—',
+                            'option_none_value' => 0,
+                        ]);
+                        ?>
+                        <p class="description">
+                            選擇一個包含 <code>[buygo_line_register_flow]</code> shortcode 的頁面。<br>
+                            若未選擇，新用戶將在 wp-login.php 上看到註冊表單。
+                        </p>
+                        <?php
+                        // 檢查所選頁面是否包含 shortcode
+                        if ($register_flow_page_id) {
+                            $page = get_post($register_flow_page_id);
+                            if ($page) {
+                                $has_shortcode = has_shortcode($page->post_content, 'buygo_line_register_flow');
+                                if (!$has_shortcode) {
+                                    echo '<div class="notice notice-warning inline" style="margin-top: 10px; padding: 10px;">';
+                                    echo '<p><strong>警告：</strong>所選頁面未包含 <code>[buygo_line_register_flow]</code> shortcode。</p>';
+                                    echo '<p>請編輯該頁面並新增 shortcode，或選擇其他頁面。</p>';
+                                    echo '</div>';
+                                } else {
+                                    echo '<div class="notice notice-success inline" style="margin-top: 10px; padding: 10px;">';
+                                    echo '<p>✓ 頁面已正確包含 shortcode</p>';
+                                    echo '</div>';
+                                }
+                            }
+                        }
+                        ?>
+                    </td>
+                </tr>
+
+                <!-- 快速建立頁面按鈕 -->
+                <tr>
+                    <th scope="row">
+                        <label>快速建立頁面</label>
+                    </th>
+                    <td>
+                        <button type="button" id="create-register-flow-page" class="button button-secondary">
+                            自動建立註冊頁面
+                        </button>
+                        <span id="create-page-status" style="margin-left: 10px;"></span>
+                        <p class="description">
+                            點擊後會自動建立一個包含 shortcode 的「LINE 註冊」頁面。
+                        </p>
+
+                        <script>
+                        document.getElementById('create-register-flow-page').addEventListener('click', function() {
+                            const btn = this;
+                            const status = document.getElementById('create-page-status');
+
+                            btn.disabled = true;
+                            status.textContent = '建立中...';
+                            status.style.color = '#666';
+
+                            // 發送 AJAX 請求建立頁面
+                            fetch('<?php echo esc_js(admin_url('admin-ajax.php')); ?>', {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/x-www-form-urlencoded',
+                                },
+                                body: new URLSearchParams({
+                                    action: 'buygo_line_create_register_page',
+                                    _ajax_nonce: '<?php echo wp_create_nonce('buygo_line_create_register_page'); ?>'
+                                })
+                            })
+                            .then(response => response.json())
+                            .then(data => {
+                                if (data.success) {
+                                    status.textContent = '✓ 頁面建立成功！';
+                                    status.style.color = '#46b450';
+
+                                    // 更新下拉選單
+                                    const select = document.getElementById('register_flow_page');
+                                    const option = document.createElement('option');
+                                    option.value = data.data.page_id;
+                                    option.textContent = data.data.page_title;
+                                    option.selected = true;
+                                    select.appendChild(option);
+
+                                    // 顯示編輯連結
+                                    status.innerHTML = '✓ 頁面建立成功！<a href="' + data.data.edit_url + '" target="_blank" style="margin-left: 10px;">編輯頁面</a>';
+                                } else {
+                                    status.textContent = '✗ 建立失敗：' + data.data.message;
+                                    status.style.color = '#dc3232';
+                                    btn.disabled = false;
+                                }
+                            })
+                            .catch(error => {
+                                status.textContent = '✗ 發生錯誤';
+                                status.style.color = '#dc3232';
+                                btn.disabled = false;
+                            });
+                        });
+                        </script>
                     </td>
                 </tr>
 
@@ -220,6 +328,43 @@ if (!defined('ABSPATH')) {
             </tbody>
         </table>
 
+        <h2>前台登入按鈕設定</h2>
+        <table class="form-table" role="presentation">
+            <tbody>
+                <tr>
+                    <th scope="row">
+                        <label for="login_button_position">按鈕位置</label>
+                    </th>
+                    <td>
+                        <select id="login_button_position" name="login_button_position">
+                            <option value="before" <?php selected($settings['login_button_position'], 'before'); ?>>
+                                在其他登入方式之前顯示
+                            </option>
+                            <option value="after" <?php selected($settings['login_button_position'], 'after'); ?>>
+                                在其他登入方式之後顯示
+                            </option>
+                        </select>
+                        <p class="description">控制 LINE 登入按鈕在登入頁面的顯示位置</p>
+                    </td>
+                </tr>
+
+                <tr>
+                    <th scope="row">
+                        <label for="login_button_text">按鈕文字</label>
+                    </th>
+                    <td>
+                        <input type="text"
+                               id="login_button_text"
+                               name="login_button_text"
+                               value="<?php echo esc_attr($settings['login_button_text'] ?: '使用 LINE 登入'); ?>"
+                               class="regular-text"
+                               placeholder="使用 LINE 登入">
+                        <p class="description">自訂 LINE 登入按鈕上顯示的文字</p>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+
         <?php submit_button('儲存設定', 'primary', 'buygo_line_settings_submit'); ?>
     </form>
 </div>
@@ -248,7 +393,7 @@ function copyWebhookUrl() {
 }
 
 function copyCallbackUrl() {
-    const callbackUrl = '<?php echo esc_js(rest_url('buygo-line-notify/v1/login/callback')); ?>';
+    const callbackUrl = '<?php echo esc_js(site_url('wp-login.php?loginSocial=buygo-line')); ?>';
 
     navigator.clipboard.writeText(callbackUrl).then(() => {
         // 顯示成功提示
