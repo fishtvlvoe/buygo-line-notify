@@ -89,6 +89,12 @@ class Login_Handler {
 			return;
 		}
 
+		// 檢查是否為表單提交
+		if ( isset( $_POST['action'] ) && $_POST['action'] === 'buygo_line_register' ) {
+			$this->handle_register_submission();
+			return;
+		}
+
 		try {
 			// 判斷是 authorize 還是 callback
 			if ( isset( $_GET['code'] ) && isset( $_GET['state'] ) ) {
@@ -456,5 +462,275 @@ class Login_Handler {
 		</div>
 		<?php
 		login_footer();
+	}
+
+	/**
+	 * 處理註冊表單提交
+	 *
+	 * @return void
+	 */
+	private function handle_register_submission(): void {
+		// 取得 state 用於 Transient 清除（錯誤時也需要清除）
+		$state       = isset( $_POST['state'] ) ? sanitize_text_field( wp_unslash( $_POST['state'] ) ) : '';
+		$profile_key = self::PROFILE_TRANSIENT_PREFIX . $state;
+
+		// 1. Nonce 驗證
+		if ( ! isset( $_POST['buygo_line_register_nonce'] ) ||
+		     ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['buygo_line_register_nonce'] ) ), 'buygo_line_register_action' ) ) {
+			// 安全驗證失敗不清除 Transient（可能是 CSRF 攻擊）
+			wp_die( '安全驗證失敗', 'Error', array( 'response' => 403 ) );
+		}
+
+		// 2. 驗證 state 和 Transient
+		$data = get_transient( $profile_key );
+
+		if ( $data === false ) {
+			Logger::get_instance()->log(
+				'error',
+				array(
+					'message' => 'Registration: Profile transient not found',
+					'state'   => $state,
+				)
+			);
+			wp_die( '登入資料已過期，請重新嘗試 LINE 登入', 'Error', array( 'response' => 400 ) );
+		}
+
+		$profile    = $data['profile'];
+		$state_data = $data['state_data'];
+
+		// 3. 取得表單資料
+		$user_login = isset( $_POST['user_login'] ) ? sanitize_user( wp_unslash( $_POST['user_login'] ), true ) : '';
+		$user_email = isset( $_POST['user_email'] ) ? sanitize_email( wp_unslash( $_POST['user_email'] ) ) : '';
+		$line_uid   = isset( $_POST['line_uid'] ) ? sanitize_text_field( wp_unslash( $_POST['line_uid'] ) ) : '';
+
+		// 4. 驗證 LINE UID 一致性（防篡改）
+		if ( $line_uid !== $profile['userId'] ) {
+			Logger::get_instance()->log(
+				'error',
+				array(
+					'message'       => 'Registration: LINE UID mismatch',
+					'form_line_uid' => $line_uid,
+					'profile_uid'   => $profile['userId'],
+				)
+			);
+			// LINE UID 不一致，清除 Transient 防止重複嘗試
+			delete_transient( $profile_key );
+			wp_die( 'LINE 帳號資訊不一致', 'Error', array( 'response' => 400 ) );
+		}
+
+		// 5. 驗證用戶名和 Email
+		if ( empty( $user_login ) ) {
+			// 不清除 Transient，允許用戶修正後重試
+			wp_die( '請填寫用戶名', 'Error', array( 'response' => 400, 'back_link' => true ) );
+		}
+
+		if ( empty( $user_email ) || ! is_email( $user_email ) ) {
+			// 不清除 Transient，允許用戶修正後重試
+			wp_die( '請輸入有效的 Email 地址', 'Error', array( 'response' => 400, 'back_link' => true ) );
+		}
+
+		// 6. 檢查 LINE UID 是否已綁定其他用戶
+		$existing_line_user = LineUserService::getUserByLineUid( $line_uid );
+		if ( $existing_line_user ) {
+			Logger::get_instance()->log(
+				'error',
+				array(
+					'message'  => 'Registration: LINE UID already linked',
+					'line_uid' => $line_uid,
+					'user_id'  => $existing_line_user,
+				)
+			);
+			// LINE 已綁定，清除 Transient
+			delete_transient( $profile_key );
+			wp_die( '此 LINE 帳號已綁定其他用戶', 'Error', array( 'response' => 400 ) );
+		}
+
+		// 7. 檢查 Email 是否已存在（Auto-link）
+		$existing_user_id = email_exists( $user_email );
+		if ( $existing_user_id ) {
+			$this->handle_auto_link( $existing_user_id, $line_uid, $profile, $state_data, $profile_key );
+			return;
+		}
+
+		// 8. 檢查用戶名是否已存在（加數字後綴）
+		$original_login = $user_login;
+		$counter        = 1;
+		while ( username_exists( $user_login ) ) {
+			$user_login = $original_login . $counter;
+			$counter++;
+		}
+
+		// 9. 建立用戶
+		$user_id = wp_insert_user(
+			array(
+				'user_login'   => $user_login,
+				'user_email'   => $user_email,
+				'user_pass'    => wp_generate_password( 16, false ),
+				'display_name' => $profile['displayName'] ?? $user_login,
+				'role'         => 'subscriber',
+			)
+		);
+
+		if ( is_wp_error( $user_id ) ) {
+			Logger::get_instance()->log(
+				'error',
+				array(
+					'message'       => 'Registration: wp_insert_user failed',
+					'error_code'    => $user_id->get_error_code(),
+					'error_message' => $user_id->get_error_message(),
+				)
+			);
+			// 用戶建立失敗，清除 Transient 防止數據不一致
+			delete_transient( $profile_key );
+			wp_die( '用戶建立失敗: ' . esc_html( $user_id->get_error_message() ), 'Error', array( 'response' => 500 ) );
+		}
+
+		// 10. 綁定 LINE（is_registration = true）
+		$link_result = LineUserService::linkUser( $user_id, $line_uid, true );
+		if ( ! $link_result ) {
+			// 理論上不應該發生（前面已檢查），但保險起見
+			Logger::get_instance()->log(
+				'error',
+				array(
+					'message'  => 'Registration: linkUser failed after user creation',
+					'user_id'  => $user_id,
+					'line_uid' => $line_uid,
+				)
+			);
+			// 用戶已建立，繼續流程（LINE 綁定問題可稍後處理）
+		}
+
+		// 11. 儲存 LINE 頭像 URL 到 user_meta
+		if ( ! empty( $profile['pictureUrl'] ) ) {
+			update_user_meta( $user_id, 'buygo_line_avatar_url', $profile['pictureUrl'] );
+		}
+
+		Logger::get_instance()->log(
+			'info',
+			array(
+				'message'  => 'User registered via LINE',
+				'user_id'  => $user_id,
+				'line_uid' => $line_uid,
+				'email'    => $user_email,
+			)
+		);
+
+		// 12. 清除 Transient（成功）
+		delete_transient( $profile_key );
+
+		// 13. 自動登入
+		wp_set_auth_cookie( $user_id, true );
+
+		// 14. 觸發 hook（供其他外掛使用）
+		do_action( 'buygo_line_after_register', $user_id, $line_uid, $profile );
+
+		// 15. 導向
+		$redirect_to = $state_data['redirect_url'] ?? home_url();
+		$redirect_to = apply_filters( 'login_redirect', $redirect_to, '', get_user_by( 'id', $user_id ) );
+
+		wp_safe_redirect( $redirect_to );
+		exit;
+	}
+
+	/**
+	 * 處理 Auto-link（Email 已存在時綁定現有帳號）
+	 *
+	 * @param int    $user_id WordPress User ID
+	 * @param string $line_uid LINE UID
+	 * @param array  $profile LINE profile
+	 * @param array  $state_data State 資料
+	 * @param string $profile_key Transient key
+	 * @return void
+	 */
+	private function handle_auto_link(
+		int $user_id,
+		string $line_uid,
+		array $profile,
+		array $state_data,
+		string $profile_key
+	): void {
+		Logger::get_instance()->log(
+			'info',
+			array(
+				'message'  => 'Auto-link: Email exists, linking to existing user',
+				'user_id'  => $user_id,
+				'line_uid' => $line_uid,
+				'email'    => $profile['email'] ?? 'N/A',
+			)
+		);
+
+		// 檢查該用戶是否已綁定其他 LINE 帳號
+		$existing_line_uid = LineUserService::getLineUidByUserId( $user_id );
+		if ( $existing_line_uid ) {
+			Logger::get_instance()->log(
+				'error',
+				array(
+					'message'           => 'Auto-link: User already linked to another LINE',
+					'user_id'           => $user_id,
+					'existing_line_uid' => $existing_line_uid,
+					'new_line_uid'      => $line_uid,
+				)
+			);
+			// 用戶已綁定其他 LINE，清除 Transient
+			delete_transient( $profile_key );
+			wp_die( '此 Email 的帳號已綁定其他 LINE 帳號', 'Error', array( 'response' => 400 ) );
+		}
+
+		// 綁定 LINE（is_registration = false，因為是 auto-link 不是新註冊）
+		$link_result = LineUserService::linkUser( $user_id, $line_uid, false );
+		if ( ! $link_result ) {
+			Logger::get_instance()->log(
+				'error',
+				array(
+					'message'  => 'Auto-link: linkUser failed',
+					'user_id'  => $user_id,
+					'line_uid' => $line_uid,
+				)
+			);
+			// 綁定失敗，清除 Transient
+			delete_transient( $profile_key );
+			wp_die( 'LINE 帳號綁定失敗', 'Error', array( 'response' => 500 ) );
+		}
+
+		// 儲存 LINE 頭像 URL
+		if ( ! empty( $profile['pictureUrl'] ) ) {
+			update_user_meta( $user_id, 'buygo_line_avatar_url', $profile['pictureUrl'] );
+		}
+
+		Logger::get_instance()->log(
+			'info',
+			array(
+				'message'  => 'Auto-link completed',
+				'user_id'  => $user_id,
+				'line_uid' => $line_uid,
+			)
+		);
+
+		// 清除 Transient（成功）
+		delete_transient( $profile_key );
+
+		// 自動登入
+		wp_set_auth_cookie( $user_id, true );
+
+		// 觸發 hook
+		do_action( 'buygo_line_after_link', $user_id, $line_uid, $profile );
+
+		// 顯示訊息並導向
+		// 使用 WordPress admin notice（透過 transient 傳遞）
+		set_transient(
+			'buygo_line_notice_' . $user_id,
+			array(
+				'type'    => 'success',
+				'message' => '已將 LINE 帳號綁定到您的現有帳號',
+			),
+			60
+		);
+
+		// 導向
+		$redirect_to = $state_data['redirect_url'] ?? home_url();
+		$redirect_to = apply_filters( 'login_redirect', $redirect_to, '', get_user_by( 'id', $user_id ) );
+
+		wp_safe_redirect( $redirect_to );
+		exit;
 	}
 }
