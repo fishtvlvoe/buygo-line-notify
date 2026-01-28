@@ -47,6 +47,12 @@ if (!defined('ABSPATH')) {
                 </tr>
 
                 <!-- Messaging API 設定 -->
+            </tbody>
+        </table>
+
+        <h2>Messaging API 設定</h2>
+        <table class="form-table" role="presentation">
+            <tbody>
                 <tr>
                     <th scope="row">
                         <label for="channel_access_token">Channel Access Token</label>
@@ -74,8 +80,12 @@ if (!defined('ABSPATH')) {
                         <p class="description">LINE Messaging API 的 Channel Secret（用於 Webhook 簽名驗證）</p>
                     </td>
                 </tr>
+            </tbody>
+        </table>
 
-                <!-- LINE Login 設定 -->
+        <h2>LINE Login 設定</h2>
+        <table class="form-table" role="presentation">
+            <tbody>
                 <tr>
                     <th scope="row">
                         <label for="login_channel_id">LINE Login Channel ID</label>
@@ -86,7 +96,7 @@ if (!defined('ABSPATH')) {
                                name="login_channel_id"
                                value="<?php echo esc_attr($settings['login_channel_id']); ?>"
                                class="regular-text">
-                        <p class="description">LINE Login 的 Channel ID</p>
+                        <p class="description">從 LINE Developers Console 的 LINE Login Channel 取得</p>
                     </td>
                 </tr>
 
@@ -95,16 +105,49 @@ if (!defined('ABSPATH')) {
                         <label for="login_channel_secret">LINE Login Channel Secret</label>
                     </th>
                     <td>
-                        <input type="text"
+                        <input type="password"
                                id="login_channel_secret"
                                name="login_channel_secret"
                                value="<?php echo esc_attr($settings['login_channel_secret']); ?>"
                                class="regular-text">
-                        <p class="description">LINE Login 的 Channel Secret</p>
+                        <p class="description">從 LINE Developers Console 的 LINE Login Channel 取得</p>
                     </td>
                 </tr>
 
-                <!-- LIFF 設定 -->
+                <tr>
+                    <th scope="row">
+                        <label>Callback URL</label>
+                    </th>
+                    <td>
+                        <code><?php echo esc_url(rest_url('buygo-line-notify/v1/login/callback')); ?></code>
+                        <button type="button"
+                                class="button button-secondary"
+                                onclick="copyCallbackUrl()">
+                            複製
+                        </button>
+                        <p class="description">請將此 URL 設定到 LINE Developers Console 的 Callback URL 欄位</p>
+                    </td>
+                </tr>
+
+                <tr>
+                    <th scope="row">
+                        <label>測試登入</label>
+                    </th>
+                    <td>
+                        <a href="<?php echo esc_url(rest_url('buygo-line-notify/v1/login/authorize?redirect_url=' . urlencode(admin_url('admin.php?page=buygo-line-notify-settings')))); ?>"
+                           class="button">
+                            使用 LINE 登入測試
+                        </a>
+                        <p class="description">點擊測試 LINE Login 流程</p>
+                    </td>
+                </tr>
+
+            </tbody>
+        </table>
+
+        <h2>LIFF 設定</h2>
+        <table class="form-table" role="presentation">
+            <tbody>
                 <tr>
                     <th scope="row">
                         <label for="liff_id">LIFF ID</label>
@@ -161,6 +204,26 @@ function copyWebhookUrl() {
     }).catch(() => {
         // Fallback for older browsers
         alert('請手動複製 Webhook URL');
+    });
+}
+
+function copyCallbackUrl() {
+    const callbackUrl = '<?php echo esc_js(rest_url('buygo-line-notify/v1/login/callback')); ?>';
+
+    navigator.clipboard.writeText(callbackUrl).then(() => {
+        // 顯示成功提示
+        const button = event.target;
+        const originalText = button.textContent;
+        button.textContent = '已複製！';
+        button.style.color = '#46b450';
+
+        setTimeout(() => {
+            button.textContent = originalText;
+            button.style.color = '';
+        }, 2000);
+    }).catch(() => {
+        // Fallback for older browsers
+        alert('請手動複製 Callback URL');
     });
 }
 </script>

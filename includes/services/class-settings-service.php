@@ -155,6 +155,26 @@ class SettingsService
     }
 
     /**
+     * 取得 LINE Login Channel ID
+     *
+     * @return string
+     */
+    public static function get_line_login_channel_id(): string
+    {
+        return self::get('login_channel_id', '');
+    }
+
+    /**
+     * 取得 LINE Login Channel Secret
+     *
+     * @return string
+     */
+    public static function get_line_login_channel_secret(): string
+    {
+        return self::get('login_channel_secret', '');
+    }
+
+    /**
      * 取得所有設定（用於設定頁面顯示）
      *
      * @return array
