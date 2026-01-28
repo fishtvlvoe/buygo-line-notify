@@ -76,3 +76,35 @@ Plan 10-03 Task 2 是 `type: checkpoint:human-verify` 的 blocking gate，需要
 
 無。所有實作都遵循 Nextend 架構和 Phase 10 RESEARCH.md 的指引。
 
+---
+
+## 用戶測試回報與問題修正（2026-01-29）
+
+### 問題 2: Shortcode 未正確渲染
+
+**現象：**
+- 用戶成功解除 LINE 綁定並重新測試
+- LINE 授權完成後正確導向「LINE 註冊」頁面（URL: `https://test.buygo.me/line-註冊/?state=...`）
+- 但頁面只顯示 `[buygo_line_register_flow]` 文字，沒有渲染成表單
+
+**原因：**
+Shortcode 只在 `Login_Handler::register_shortcode_dynamically()` 中註冊（動態註冊），當重定向到 Register Flow Page 時是新的頁面請求，shortcode 註冊已經消失。
+
+**解決方法：**
+在 `Plugin::onInit()` 中靜態註冊 shortcode，確保每個頁面請求都可以渲染 shortcode。
+
+**修正內容：**
+- `includes/class-plugin.php` 新增 `register_shortcodes()` 方法
+- 在 `onInit()` 中呼叫 `register_shortcodes()`
+- Shortcode 從 URL `state` 參數讀取 Transient（`RegisterFlowShortcode::render()` 已正確實作）
+- Commit: 337b57c
+
+**測試狀態：**
+- [ ] 案例 1：後台設定頁面 - **待測試**
+- [ ] 案例 2：新用戶註冊流程（Register Flow Page） - **待重測**（修正 shortcode 問題後）
+- [ ] 案例 3：新用戶註冊流程（Fallback 模式） - **待測試**
+- [ ] 案例 4：Auto-link（Email 已存在） - **待測試**
+
+**下一步：**
+請重新測試案例 2，應該會看到完整的註冊表單了！
+
