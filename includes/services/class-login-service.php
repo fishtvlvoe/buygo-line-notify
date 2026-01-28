@@ -91,10 +91,10 @@ class LoginService {
 
 		$authorize_url = self::LINE_OAUTH_BASE_URL . '/authorize?' . http_build_query( $params );
 
-		Logger::log(
-			'INFO',
-			'LINE Login authorize URL generated',
+		Logger::get_instance()->log(
+			'info',
 			array(
+				'message'      => 'LINE Login authorize URL generated',
 				'state'        => $state,
 				'redirect_url' => $redirect_url,
 				'user_id'      => $user_id,
@@ -117,7 +117,7 @@ class LoginService {
 		// 1. 驗證 state
 		$state_data = $this->state_manager->verify_state( $state );
 		if ( $state_data === false ) {
-			Logger::log( 'ERROR', 'Invalid or expired state', array( 'state' => $state ) );
+			Logger::get_instance()->log( 'error', array( 'message' => 'Invalid or expired state', 'state' => $state ) );
 			return new \WP_Error( 'invalid_state', 'Invalid or expired state parameter' );
 		}
 
@@ -138,10 +138,10 @@ class LoginService {
 			return $profile;
 		}
 
-		Logger::log(
-			'INFO',
-			'LINE Login callback handled successfully',
+		Logger::get_instance()->log(
+			'info',
 			array(
+				'message'  => 'LINE Login callback handled successfully',
 				'line_uid' => $profile['userId'] ?? 'unknown',
 				'state'    => $state,
 			)
@@ -178,7 +178,7 @@ class LoginService {
 		);
 
 		if ( is_wp_error( $response ) ) {
-			Logger::log( 'ERROR', 'Token exchange HTTP request failed', array( 'error' => $response->get_error_message() ) );
+			Logger::get_instance()->log( 'error', array( 'message' => 'Token exchange HTTP request failed', 'error' => $response->get_error_message() ) );
 			return new \WP_Error( 'token_exchange_failed', 'Failed to exchange token: ' . $response->get_error_message() );
 		}
 
@@ -186,11 +186,11 @@ class LoginService {
 		$data = json_decode( $body, true );
 
 		if ( ! isset( $data['access_token'] ) ) {
-			Logger::log( 'ERROR', 'Token exchange failed', array( 'response' => $body ) );
+			Logger::get_instance()->log( 'error', array( 'message' => 'Token exchange failed', 'response' => $body ) );
 			return new \WP_Error( 'token_exchange_failed', 'Token exchange failed: ' . ( $data['error_description'] ?? 'Unknown error' ) );
 		}
 
-		Logger::log( 'INFO', 'Token exchange successful', array( 'has_token' => true ) );
+		Logger::get_instance()->log( 'info', array( 'message' => 'Token exchange successful', 'has_token' => true ) );
 
 		return $data;
 	}
@@ -212,7 +212,7 @@ class LoginService {
 		);
 
 		if ( is_wp_error( $response ) ) {
-			Logger::log( 'ERROR', 'Profile fetch HTTP request failed', array( 'error' => $response->get_error_message() ) );
+			Logger::get_instance()->log( 'error', array( 'message' => 'Profile fetch HTTP request failed', 'error' => $response->get_error_message() ) );
 			return new \WP_Error( 'profile_fetch_failed', 'Failed to fetch profile: ' . $response->get_error_message() );
 		}
 
@@ -220,14 +220,14 @@ class LoginService {
 		$data = json_decode( $body, true );
 
 		if ( ! isset( $data['userId'] ) ) {
-			Logger::log( 'ERROR', 'Profile fetch failed', array( 'response' => $body ) );
+			Logger::get_instance()->log( 'error', array( 'message' => 'Profile fetch failed', 'response' => $body ) );
 			return new \WP_Error( 'profile_fetch_failed', 'Profile fetch failed: Invalid response' );
 		}
 
-		Logger::log(
-			'INFO',
-			'Profile fetch successful',
+		Logger::get_instance()->log(
+			'info',
 			array(
+				'message'     => 'Profile fetch successful',
 				'userId'      => $data['userId'],
 				'displayName' => $data['displayName'] ?? 'unknown',
 			)
