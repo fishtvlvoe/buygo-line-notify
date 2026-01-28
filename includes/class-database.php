@@ -119,6 +119,103 @@ class Database {
     }
 
     /**
+     * 從 wp_buygo_line_bindings 遷移資料到 wp_buygo_line_users
+     *
+     * 將舊表的 active 狀態資料遷移到新表，舊表保留不刪除
+     */
+    private static function migrate_from_bindings_table(): void {
+        global $wpdb;
+
+        $old_table = $wpdb->prefix . 'buygo_line_bindings';
+        $new_table = $wpdb->prefix . 'buygo_line_users';
+
+        // 檢查遷移狀態（避免重複執行）
+        $migration_status = get_option('buygo_line_migration_status', []);
+        if (!empty($migration_status['completed_at'])) {
+            return; // 已完成遷移
+        }
+
+        // 檢查舊表是否存在
+        $old_table_exists = $wpdb->get_var(
+            $wpdb->prepare("SHOW TABLES LIKE %s", $old_table)
+        ) === $old_table;
+
+        if (!$old_table_exists) {
+            // 舊表不存在，標記為無需遷移
+            update_option('buygo_line_migration_status', [
+                'status'       => 'skipped',
+                'reason'       => 'old_table_not_found',
+                'old_table'    => $old_table,
+                'new_table'    => $new_table,
+                'completed_at' => current_time('mysql'),
+            ]);
+            return;
+        }
+
+        // 讀取舊表 active 狀態的資料
+        $old_records = $wpdb->get_results(
+            "SELECT * FROM {$old_table} WHERE status = 'active'"
+        );
+
+        $migrated_count = 0;
+        $error_count = 0;
+        $errors = [];
+
+        // 遍歷遷移每筆資料
+        foreach ($old_records as $record) {
+            // 檢查 identifier 是否已存在於新表（避免重複）
+            $exists = $wpdb->get_var($wpdb->prepare(
+                "SELECT COUNT(*) FROM {$new_table} WHERE identifier = %s",
+                $record->line_uid
+            ));
+
+            if ($exists) {
+                continue; // 跳過已存在的資料
+            }
+
+            // 欄位對應：
+            // - type: 固定為 'line'
+            // - identifier: 來自 line_uid
+            // - user_id: 來自 user_id
+            // - register_date: 來自 created_at（首次綁定視為註冊）
+            // - link_date: 來自 updated_at（若為 NULL 則使用 created_at）
+            $result = $wpdb->insert(
+                $new_table,
+                [
+                    'type'          => 'line',
+                    'identifier'    => $record->line_uid,
+                    'user_id'       => $record->user_id,
+                    'register_date' => $record->created_at,
+                    'link_date'     => $record->updated_at ?? $record->created_at,
+                ],
+                ['%s', '%s', '%d', '%s', '%s']
+            );
+
+            if ($result) {
+                $migrated_count++;
+            } else {
+                $error_count++;
+                $errors[] = [
+                    'line_uid' => $record->line_uid,
+                    'user_id'  => $record->user_id,
+                    'error'    => $wpdb->last_error,
+                ];
+            }
+        }
+
+        // 記錄遷移狀態到 wp_options（舊表保留不刪除）
+        update_option('buygo_line_migration_status', [
+            'status'         => 'completed',
+            'migrated_count' => $migrated_count,
+            'error_count'    => $error_count,
+            'errors'         => $errors,
+            'old_table'      => $old_table,
+            'new_table'      => $new_table,
+            'completed_at'   => current_time('mysql'),
+        ]);
+    }
+
+    /**
      * 刪除資料表（外掛移除時使用）
      */
     public static function drop_tables(): void {
