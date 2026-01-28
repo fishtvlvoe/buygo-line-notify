@@ -51,6 +51,9 @@ final class Plugin
         // 註冊 URL Filter Service（login_url / logout_url filters）
         \BuygoLineNotify\Services\UrlFilterService::register_hooks();
 
+        // 註冊 LINE Login shortcodes
+        $this->register_shortcodes();
+
         // 註冊 REST API（Webhook endpoint）
         \add_action('rest_api_init', function () {
             $webhook_api = new \BuygoLineNotify\Api\Webhook_API();
@@ -72,6 +75,24 @@ final class Plugin
         if (\is_admin()) {
             SettingsPage::register_hooks();
         }
+    }
+
+    /**
+     * 註冊 shortcodes
+     *
+     * @return void
+     */
+    private function register_shortcodes(): void
+    {
+        // 註冊 [buygo_line_register_flow] shortcode
+        \add_shortcode('buygo_line_register_flow', function ($atts) {
+            // 載入 shortcode 類別
+            if (!\class_exists('BuygoLineNotify\Shortcodes\RegisterFlowShortcode')) {
+                include_once BuygoLineNotify_PLUGIN_DIR . 'includes/shortcodes/class-register-flow-shortcode.php';
+            }
+            $shortcode = new \BuygoLineNotify\Shortcodes\RegisterFlowShortcode();
+            return $shortcode->render($atts, null);
+        });
     }
 
     private function loadDependencies(): void
