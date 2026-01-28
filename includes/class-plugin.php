@@ -45,6 +45,9 @@ final class Plugin
         // 註冊 LINE 登入按鈕 hooks（前台登入整合）
         \BuygoLineNotify\Services\LoginButtonService::register_hooks();
 
+        // 註冊 LINE Login Handler（標準 WordPress URL 機制）
+        \BuygoLineNotify\Handlers\Login_Handler::register_hooks();
+
         // 註冊 REST API（Webhook endpoint）
         \add_action('rest_api_init', function () {
             $webhook_api = new \BuygoLineNotify\Api\Webhook_API();
@@ -86,6 +89,12 @@ final class Plugin
         include_once BuygoLineNotify_PLUGIN_DIR . 'includes/services/class-login-service.php';
         include_once BuygoLineNotify_PLUGIN_DIR . 'includes/services/class-user-service.php';
         include_once BuygoLineNotify_PLUGIN_DIR . 'includes/services/class-login-button-service.php';
+
+        // 載入 Exception 類別
+        include_once BuygoLineNotify_PLUGIN_DIR . 'includes/exceptions/class-nsl-continue-page-render-exception.php';
+
+        // 載入 Handler 類別
+        include_once BuygoLineNotify_PLUGIN_DIR . 'includes/handlers/class-login-handler.php';
 
         // 載入 API 類別
         include_once BuygoLineNotify_PLUGIN_DIR . 'includes/api/class-webhook-api.php';
