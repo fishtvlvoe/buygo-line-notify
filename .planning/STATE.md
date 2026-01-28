@@ -11,18 +11,18 @@ See: .planning/PROJECT.md (updated 2026-01-28)
 ## Current Position
 
 Phase: 14 of 23 (buygo-line-notify Webhook 系統)
-Plan: 01/TBD 完成（14-01 完成）
-Status: In progress
-Last activity: 2026-01-28 — Completed 14-01-PLAN.md (Webhook API Endpoint 和簽名驗證)
+Plan: 03/03 完成（14-01, 14-02, 14-03 完成）
+Status: Phase 14 Wave 2 complete
+Last activity: 2026-01-29 — Completed 14-03-PLAN.md (Plugin 整合與背景處理)
 
-Progress: [████████████░░░░░░░░] 57% overall (13/23 phases from v1.0-v2.0, Phase 14 in progress)
+Progress: [████████████░░░░░░░░] 57% overall (13/23 phases from v1.0-v2.0, Phase 14 Wave 2 complete)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 1 (Phase 14)
-- Average duration: 2 min
-- Total execution time: 2 min
+- Total plans completed: 3 (Phase 14 Wave 2)
+- Average duration: 3 min
+- Total execution time: 9 min
 
 **By Milestone:**
 
@@ -30,20 +30,23 @@ Progress: [████████████░░░░░░░░] 57% ove
 |-----------|--------|-------|--------------|------------|
 | v1.0 測試驗證 | 6/6 | 14/14 | 36/36 | 2026-01-28 |
 | v2.0 全頁面遷移 | 7/7 | 21/21 | 26/26 | 2026-01-28 |
-| v3.0 新功能整合 | 0/10 | 1/TBD | 2/75 | In progress |
+| v3.0 新功能整合 | 0/10 | 3/TBD | 8/75 | In progress |
 
-**Phase 14 Summary:**
+**Phase 14 Summary (Wave 2 Complete):**
 - Webhook API endpoint: ✅ Created (/wp-json/buygo-line-notify/v1/webhook)
 - Signature verification: ✅ Implemented (HMAC-SHA256)
 - Verify Event handling: ✅ Working (replyToken: 32 個 0)
-- Development mode: ✅ Supports testing without Channel Secret
+- Event deduplication: ✅ Implemented (webhookEventId + 60s transient)
+- Background processing: ✅ FastCGI + WP_Cron fallback
+- Plugin integration: ✅ Hooks registered (rest_api_init, buygo_process_line_webhook)
+- LINE Console verified: ✅ Webhook URL test passed
 
 **Recent Activity:**
-- 14-01 completed (2 tasks, 2 commits)
-- WebhookVerifier: hash_hmac + hash_equals
-- Webhook_API: register_rest_route + Verify Event detection
+- 14-01 completed (2 tasks, 2 commits) - Webhook endpoint + signature verification
+- 14-02 completed (1 task, 1 commit) - WebhookHandler + event deduplication
+- 14-03 completed (2 tasks, 2 commits) - Plugin integration + background processing
 
-*Updated: 2026-01-28 after Phase 14 Plan 01 completion*
+*Updated: 2026-01-29 after Phase 14 Plan 03 completion*
 
 ## Accumulated Context
 
@@ -68,7 +71,11 @@ Recent decisions affecting current work:
 - **14-01:** permission_callback 使用 __return_true（公開 endpoint），簽名驗證在 callback 中處理（避免 403，LINE 需要 401）
 - **14-01:** 開發環境允許跳過簽名驗證（WP_DEBUG 或 local 環境），便於測試
 - **14-01:** Verify Event 立即返回 200，不觸發業務邏輯（replyToken: 32 個 0）
-- **14-01:** 正常事件處理延遲到 Plan 02（目前只記錄日誌）
+- **14-02:** 使用 webhookEventId + Transients API 實作去重（60 秒 TTL）
+- **14-02:** 觸發 12 個 WordPress Hooks（通用、事件類型、訊息類型）
+- **14-03:** FastCGI 環境使用 fastcgi_finish_request 立即返回 200 後背景處理
+- **14-03:** 非 FastCGI 環境使用 wp_schedule_single_event 排程背景處理
+- **14-03:** 在 Plugin::onInit 註冊 rest_api_init 和 buygo_process_line_webhook hooks
 
 ### Pending Todos
 
@@ -80,7 +87,7 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-01-28 17:12
-Stopped at: Completed 14-01-PLAN.md (Webhook API Endpoint 和簽名驗證)
+Last session: 2026-01-29 01:23
+Stopped at: Completed 14-03-PLAN.md (Plugin 整合與背景處理)
 Resume file: None
-Resume: Ready for Phase 14 Plan 02 planning
+Resume: Phase 14 Wave 2 complete. Ready for Wave 3 (LIFF 系統) or Phase 15 (LINE Login 系統)
