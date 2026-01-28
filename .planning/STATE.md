@@ -12,25 +12,25 @@ See: .planning/PROJECT.md (updated 2026-01-29)
 
 Milestone: v0.2 (LINE Login 完整重構)
 Phase: 8 of 15 (資料表架構與查詢 API)
-Plan: 2 of 2 in Phase 8
-Status: Phase 8 completed ✅
-Last activity: 2026-01-29 — Completed 08-02-PLAN.md (LineUserService 查詢 API 重構)
+Plan: 2 of 2
+Status: Phase complete
+Last activity: 2026-01-29 — Completed Phase 8 (資料表架構與查詢 API)
 
-Progress: [██████████░░░░░░░░░░] 50% overall (2/7 v0.1 phases completed, 1/8 v0.2 phases completed)
+Progress: [█████████░░░░░░░░░░░] 45% overall (2/7 v0.1 phases completed, 1/8 v0.2 phases started)
 
 ## Performance Metrics
 
 **Velocity:**
 - Total plans completed: 8 (Phase 1: 4 plans, Phase 2: 2 plans, Phase 8: 2 plans)
-- Average duration: ~2.5 min per plan
-- Total execution time: ~25 min (v0.1: 18 min, v0.2: 5.5 min)
+- Average duration: ~3-4 min per plan
+- Total execution time: ~30 min (v0.1 + Phase 8)
 
 **By Milestone:**
 
 | Milestone | Phases | Plans | Requirements | Completion |
 |-----------|--------|-------|--------------|------------|
 | v0.1 基礎架構 | 2/7 | 6/TBD | 24/~40 | Partial (Phase 1-2 完成) |
-| v0.2 LINE Login 重構 | 1/8 | 2/TBD | 3/49 | In progress (Phase 8 完成) |
+| v0.2 LINE Login 重構 | 1/8 | 2/TBD | 3/49 | Phase 8 complete |
 | v0.3 進階功能 | 0/TBD | 0/TBD | 0/TBD | Not planned |
 
 **v0.1 Milestone Summary (Partial Complete):**
@@ -38,8 +38,8 @@ Progress: [██████████░░░░░░░░░░] 50% ove
 - Phase 2: ✅ Webhook 系統（endpoint、簽名驗證、去重、背景處理）
 - Phase 3-7: 🚫 Deprecated or ⏸️ Deferred（由 v0.2 重構取代）
 
-**v0.2 Milestone Overview (In progress):**
-- Phase 8: ✅ 資料表架構與查詢 API（ARCH: 3 需求）— 完成
+**v0.2 Milestone Overview:**
+- Phase 8: ✅ 資料表架構與查詢 API（ARCH: 3 需求完成）
 - Phase 9: 標準 WordPress URL 機制（URL + NSL-01: 5 需求）
 - Phase 10: Register Flow Page 系統（NSL + RFP: 8 需求）
 - Phase 11: 完整註冊/登入/綁定流程（FLOW + STORAGE: 6 需求）
@@ -51,14 +51,12 @@ Progress: [██████████░░░░░░░░░░] 50% ove
 **Total v0.2 Requirements: 49**
 
 **Recent Activity:**
-- 2026-01-29: Phase 8 completed（資料表架構與查詢 API）
-  - Plan 01: wp_buygo_line_users 資料表建立與遷移機制
-  - Plan 02: LineUserService 查詢 API 重構
+- 2026-01-29: Phase 8 completed（資料表架構與查詢 API - 2 plans, 3 requirements）
 - 2026-01-29: ROADMAP.md created for v0.2 Milestone（8 phases, 49 requirements）
 - 2026-01-28: Phase 2 completed（Webhook 系統）
 - 2026-01-28: Phase 1 completed（基礎設施與設定）
 
-*Updated: 2026-01-29 after Phase 8 completion*
+*Updated: 2026-01-29 after Phase 8 execution*
 
 ## Accumulated Context
 
@@ -75,24 +73,21 @@ Recent decisions affecting current work:
 - **Register Flow Page + Shortcode**: 靈活整合、可放任何頁面
 - **LIFF 延後到 v0.3**: Nextend 架構已足夠,先驗證再決定
 
+**Phase 8 Implementation Decisions:**
+- **對齊 Nextend wp_social_users 結構**: 完全採用 Nextend 欄位命名，確保架構純粹性
+- **舊表保留不刪除**: 遷移後保留 wp_buygo_line_bindings，避免資料遺失
+- **遷移狀態記錄到 wp_options**: buygo_line_migration_status 記錄遷移詳情
+- **統一版本追蹤為 buygo_line_db_version**: 簡化命名，與外掛名稱一致
+- **unlinkUser 使用硬刪除**: DELETE 而非軟刪除，對齊 Nextend 架構
+- **linkUser 拒絕重複綁定**: 確保一對一關係（LINE UID ↔ WordPress User）
+
 **v0.1 Implementation Decisions:**
-- 使用混合儲存（user_meta + bindings 表）：快速查詢與完整歷史兼顧 — v0.2 將取代為專用表
+- 使用混合儲存（user_meta + bindings 表）：快速查詢與完整歷史兼顧 — ✅ v0.2 已取代為專用表
 - 採用 Nextend 的持久化儲存架構：處理 LINE 瀏覽器 Cookie 問題 — 保留使用
 - Webhook 遷移到 buygo-line-notify：基礎設施應在基礎層 — 已完成
 - **01-01:** UNIQUE KEY 限制 user_id 和 line_uid（確保一對一綁定關係）
 - **01-02:** 使用 AES-128-ECB（與舊外掛相同,確保向後相容）
 - **01-03:** 使用 class_exists('BuyGoPlus\Plugin') 偵測父外掛
-- **14-01:** permission_callback 使用 __return_true（公開 endpoint）
-- **14-02:** 使用 webhookEventId + Transients API 實作去重
-- **14-03:** FastCGI 環境使用 fastcgi_finish_request 立即返回 200
-- **08-01:** 對齊 Nextend wp_social_users 結構（ID, type, identifier, user_id, register_date, link_date）
-- **08-01:** 舊表保留不刪除（遷移後保留 wp_buygo_line_bindings 避免資料遺失）
-- **08-01:** 遷移狀態記錄到 wp_options（buygo_line_migration_status）
-- **08-01:** 統一版本追蹤為 buygo_line_db_version
-- **08-02:** 硬刪除綁定（unlinkUser 使用 DELETE，對齊 Nextend 行為）
-- **08-02:** linkUser 拒絕重複綁定（確保一對一關係）
-- **08-02:** 舊方法保留向後相容（標記 deprecated 但不移除）
-- **08-02:** is_registration 參數控制 register_date（區分註冊/綁定來源）
 
 ### v0.2 Architecture Reference
 
@@ -101,7 +96,7 @@ Recent decisions affecting current work:
 **核心機制:**
 1. **NSLContinuePageRenderException 模式**: OAuth callback 拋出特殊例外,讓 WordPress 繼續渲染
 2. **Register Flow Page + Shortcode**: 動態註冊 shortcode,在任何頁面顯示註冊表單
-3. **wp_social_users 專用表**: 單一真實來源（對應我們的 wp_buygo_line_users）
+3. **wp_social_users 專用表**: 單一真實來源（對應我們的 wp_buygo_line_users） — ✅ Phase 8 完成
 4. **標準 WordPress URL**: `wp-login.php?loginSocial=buygo-line`（取代 REST API）
 5. **完整 Profile Sync**: 註冊/登入/綁定時同步 name、email、avatar
 6. **Avatar 整合**: `get_avatar_url` filter hook
@@ -120,13 +115,12 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-01-29 12:50
-Stopped at: Completed Phase 8 (資料表架構與查詢 API)
+Last session: 2026-01-29 14:00
+Stopped at: Phase 8 execution complete
 Resume file: None
-Resume: Phase 8 完成，準備進入 Phase 9
+Resume: Ready to start Phase 9 (標準 WordPress URL 機制)
 
 **Next steps:**
-1. Run `/gsd:plan-phase 9` to create execution plans for 標準 WordPress URL 機制
-2. Phase 9 will implement WordPress URL mechanism (URL-01 to URL-04)
-3. Phase 9 will implement NSLContinuePageRenderException (NSL-01)
-4. Phase 9 will use the new LineUserService API from Phase 8
+1. Run `/gsd:plan-phase 9` to create execution plans for Phase 9
+2. Phase 9 will implement login_init hook, OAuth callback, replace REST API
+3. Phase 10 will implement Register Flow Page system

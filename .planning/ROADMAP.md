@@ -198,6 +198,12 @@ Plans:
   2. 舊的 `wp_buygo_line_bindings` 資料已成功遷移到新表（register_date、link_date 正確對應）
   3. 查詢 API 可正確運作（getUserByLineUid、getLineUidByUserId、isUserLinked、linkUser、unlinkUser）
   4. 遷移狀態已記錄到 wp_options（buygo_line_migration_status），舊表保留未刪除
+
+**Plans**: 2 plans
+
+Plans:
+- [x] 08-01: 建立 wp_buygo_line_users 資料表與遷移機制
+- [x] 08-02: 重構 LineUserService 查詢 API
   5. 所有查詢使用新表作為單一真實來源（不再混合使用 user_meta）
 
 **Plans**: 2 plans in 2 waves
