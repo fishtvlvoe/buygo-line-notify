@@ -2,6 +2,40 @@
 
 ## 2026-01-29 (Session 2)
 
+### 功能 (feat)
+
+#### Phase 15-05: WordPress 登入導向機制與前台登入按鈕整合
+
+**功能新增**：
+1. **WordPress 登入導向支援** - 支援 `login_redirect` filter，與第三方登入導向外掛完全相容
+2. **前台登入按鈕整合** - 自動在各種登入頁面顯示 LINE 登入按鈕
+   - Fluent Community 登入頁面
+   - Ajax Login and Registration Modal Popup Pro
+   - WordPress 原生登入頁面 (wp-login.php)
+
+**實作細節**：
+- LoginButtonService 使用 hooks 整合，不需要手動配置
+- 按鈕樣式自動適應不同的登入頁面環境
+- 使用 JavaScript fetch API 取得 authorize_url 並導向
+- 支援自訂按鈕文字（透過 `buygo_line_notify/login_button/text` filter）
+- 支援自訂按鈕樣式（透過 `buygo_line_notify/login_button/classes` filter）
+
+**變更檔案**：
+- `includes/api/class-login-api.php` - 三處登入成功後加入 `login_redirect` filter
+- `includes/services/class-login-button-service.php` - 新增登入按鈕服務
+- `includes/class-plugin.php` - 註冊登入按鈕 hooks
+
+**相容性**：
+- ✅ 與 Peter's Login Redirect / LoginWP 相容
+- ✅ 與 WP Force Login 相容
+- ✅ 與 Theme My Login 相容
+- ✅ 與任何使用 `login_redirect` filter 的外掛相容
+
+**Commits**：
+- `0e0566c` - feat(15-05): 支援 WordPress 登入導向機制與前台登入按鈕整合
+
+---
+
 ### 修正 (fix)
 
 #### Phase 15-04: LINE Login 設定頁面按鈕修正
