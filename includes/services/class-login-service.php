@@ -65,7 +65,7 @@ class LoginService {
 	public function get_authorize_url( string $redirect_url, ?int $user_id = null ): string {
 		// 產生並儲存 state
 		$state = $this->state_manager->generate_state();
-		$this->state_manager->store_state(
+		$stored = $this->state_manager->store_state(
 			$state,
 			array(
 				'redirect_url' => $redirect_url,
@@ -73,11 +73,21 @@ class LoginService {
 			)
 		);
 
+		// Debug: 記錄 state 儲存結果
+		Logger::get_instance()->log(
+			'info',
+			array(
+				'message' => 'State storage result',
+				'state'   => $state,
+				'stored'  => $stored ? 'success' : 'failed',
+			)
+		);
+
 		// 取得 Channel ID
 		$channel_id = SettingsService::get( 'login_channel_id', '' );
 
-		// 取得 Callback URL（WordPress REST API endpoint）
-		$callback_url = rest_url( 'buygo-line-notify/v1/login/callback' );
+		// 取得 Callback URL（標準 WordPress URL）
+		$callback_url = site_url( 'wp-login.php?loginSocial=buygo-line' );
 
 		// 建立 authorize URL
 		$params = array(
@@ -162,7 +172,7 @@ class LoginService {
 	private function exchange_token( string $code ) {
 		$channel_id     = SettingsService::get( 'login_channel_id', '' );
 		$channel_secret = SettingsService::get( 'login_channel_secret', '' );
-		$callback_url   = rest_url( 'buygo-line-notify/v1/login/callback' );
+		$callback_url   = site_url( 'wp-login.php?loginSocial=buygo-line' );
 
 		$response = wp_remote_post(
 			self::LINE_API_BASE_URL . '/oauth2/v2.1/token',
