@@ -7,6 +7,9 @@
  * - GET /login/callback - Handle OAuth callback
  * - POST /login/bind - Bind LINE to logged-in user
  *
+ * @deprecated 2.0.0 Use standard WordPress URL (wp-login.php?loginSocial=buygo-line) instead.
+ *             REST API endpoints are kept for backward compatibility but will be removed in v3.0.
+ *
  * @package BuygoLineNotify
  */
 
@@ -51,6 +54,8 @@ class Login_API {
 
     /**
      * Register REST API routes
+     *
+     * @deprecated 2.0.0 Use Login_Handler::register_hooks() instead.
      */
     public function register_routes() {
         // GET /wp-json/buygo-line-notify/v1/login/authorize
@@ -111,10 +116,21 @@ class Login_API {
      *
      * Generate LINE Login authorize URL
      *
+     * @deprecated 2.0.0 Use wp-login.php?loginSocial=buygo-line&redirect_to=URL instead.
+     *
      * @param \WP_REST_Request $request
      * @return \WP_REST_Response|\WP_Error
      */
     public function authorize(\WP_REST_Request $request) {
+        // 發出 deprecated 警告 header
+        header('X-BuyGo-Deprecated: Use wp-login.php?loginSocial=buygo-line instead');
+
+        // 記錄 deprecated 呼叫
+        Logger::get_instance()->log('warning', [
+            'message' => 'Deprecated REST API /login/authorize called',
+            'recommendation' => 'Use wp-login.php?loginSocial=buygo-line instead',
+        ]);
+
         $redirect_url = $request->get_param('redirect_url');
 
         // Get authorize URL from LoginService
@@ -140,10 +156,21 @@ class Login_API {
      * - Login existing user or create new user
      * - Set auth cookie and redirect
      *
+     * @deprecated 2.0.0 OAuth callback now handled by Login_Handler via login_init hook.
+     *
      * @param \WP_REST_Request $request
      * @return \WP_REST_Response|\WP_Error
      */
     public function callback(\WP_REST_Request $request) {
+        // 發出 deprecated 警告 header
+        header('X-BuyGo-Deprecated: OAuth callback now uses wp-login.php entry point');
+
+        // 記錄 deprecated 呼叫
+        Logger::get_instance()->log('warning', [
+            'message' => 'Deprecated REST API /login/callback called',
+            'recommendation' => 'Configure LINE Developers Console redirect_uri to wp-login.php?loginSocial=buygo-line',
+        ]);
+
         $code = $request->get_param('code');
         $state = $request->get_param('state');
 
@@ -197,8 +224,7 @@ class Login_API {
             $user = get_user_by('id', $existing_user_id);
             $redirect_url = apply_filters('login_redirect', $redirect_url, '', $user);
 
-            wp_redirect($redirect_url);
-            exit;
+            $this->handle_redirect($redirect_url);
         }
 
         // LINE UID not bound yet
@@ -236,8 +262,7 @@ class Login_API {
             $user = get_user_by('id', $user_id);
             $redirect_url = apply_filters('login_redirect', $redirect_url, '', $user);
 
-            wp_redirect($redirect_url);
-            exit;
+            $this->handle_redirect($redirect_url);
         }
 
         // No user_id in state, create new user from LINE profile
@@ -269,8 +294,7 @@ class Login_API {
         $user = get_user_by('id', $new_user_id);
         $redirect_url = apply_filters('login_redirect', $redirect_url, '', $user);
 
-        wp_redirect($redirect_url);
-        exit;
+        $this->handle_redirect($redirect_url);
     }
 
     /**
@@ -279,6 +303,8 @@ class Login_API {
      * Bind LINE to logged-in user
      * - Requires user to be logged in
      * - Returns authorize URL with user_id in state
+     *
+     * @deprecated 2.0.0 Bind flow will use standard WordPress URL in future versions.
      *
      * @param \WP_REST_Request $request
      * @return \WP_REST_Response|\WP_Error
@@ -313,5 +339,82 @@ class Login_API {
             'success' => true,
             'authorize_url' => $authorize_url,
         ]);
+    }
+
+    /**
+     * 處理導向（支援新分頁自動關閉）
+     *
+     * 如果是從新分頁開啟，顯示自動關閉分頁並重新導向原頁面的 HTML
+     * 否則正常 redirect
+     *
+     * @param string $redirect_url 導向 URL
+     */
+    private function handle_redirect($redirect_url) {
+        // 設定正確的 Content-Type
+        status_header(200);
+        header('Content-Type: text/html; charset=utf-8');
+
+        // 清除任何之前的輸出
+        if (ob_get_level()) {
+            ob_end_clean();
+        }
+
+        // 輸出 HTML
+        echo '<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>登入成功</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            background: linear-gradient(135deg, #06C755 0%, #05b34a 100%);
+            color: white;
+        }
+        .container {
+            text-align: center;
+            padding: 2rem;
+        }
+        .icon {
+            font-size: 4rem;
+            margin-bottom: 1rem;
+        }
+        h1 {
+            font-size: 1.5rem;
+            margin: 0 0 0.5rem 0;
+        }
+        p {
+            font-size: 1rem;
+            opacity: 0.9;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="icon">✓</div>
+        <h1>登入成功</h1>
+        <p>正在返回...</p>
+    </div>
+    <script>
+    (function() {
+        // 如果有 opener（從新分頁開啟），重新導向原頁面並關閉此分頁
+        if (window.opener && !window.opener.closed) {
+            window.opener.location.href = ' . wp_json_encode($redirect_url) . ';
+            window.close();
+        } else {
+            // 否則直接導向
+            window.location.href = ' . wp_json_encode($redirect_url) . ';
+        }
+    })();
+    </script>
+</body>
+</html>';
+        exit;
     }
 }
