@@ -11,26 +11,26 @@ See: .planning/PROJECT.md (updated 2026-01-29)
 ## Current Position
 
 Milestone: v0.2 (LINE Login 完整重構)
-Phase: 9 of 15 (標準 WordPress URL 機制)
-Plan: 3 of 3
-Status: Phase complete
-Last activity: 2026-01-29 — Completed Plan 09-02: Plugin 整合與 REST API deprecated 標記
+Phase: 10 of 15 (Register Flow Page 系統)
+Plan: 1 of 3
+Status: In progress
+Last activity: 2026-01-28 — Completed Plan 10-01: Register Flow Shortcode 核心機制
 
-Progress: [██████████░░░░░░░░░░] 50% overall (2/7 v0.1 phases completed, 2/8 v0.2 phases complete)
+Progress: [██████████░░░░░░░░░░] 52% overall (2/7 v0.1 phases completed, 3/8 v0.2 phases in progress)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 11 (Phase 1: 4 plans, Phase 2: 2 plans, Phase 8: 2 plans, Phase 9: 3 plans)
+- Total plans completed: 12 (Phase 1: 4 plans, Phase 2: 2 plans, Phase 8: 2 plans, Phase 9: 3 plans, Phase 10: 1 plan)
 - Average duration: ~3 min per plan
-- Total execution time: ~35 min (v0.1 + v0.2)
+- Total execution time: ~38 min (v0.1 + v0.2)
 
 **By Milestone:**
 
 | Milestone | Phases | Plans | Requirements | Completion |
 |-----------|--------|-------|--------------|------------|
 | v0.1 基礎架構 | 2/7 | 6/TBD | 24/~40 | Partial (Phase 1-2 完成) |
-| v0.2 LINE Login 重構 | 2/8 | 5/TBD | 8/49 | Phase 8-9 complete |
+| v0.2 LINE Login 重構 | 3/8 | 6/TBD | 8/49 | Phase 8-9 complete, Phase 10 in progress |
 | v0.3 進階功能 | 0/TBD | 0/TBD | 0/TBD | Not planned |
 
 **v0.1 Milestone Summary (Partial Complete):**
@@ -41,7 +41,7 @@ Progress: [██████████░░░░░░░░░░] 50% ove
 **v0.2 Milestone Overview:**
 - Phase 8: ✅ 資料表架構與查詢 API（ARCH: 3 需求完成）
 - Phase 9: ✅ 標準 WordPress URL 機制（URL + NSL-01: 5 需求完成）
-- Phase 10: Register Flow Page 系統（NSL + RFP: 8 需求）
+- Phase 10: 🔄 Register Flow Page 系統（NSL + RFP: 1/3 plans complete）
 - Phase 11: 完整註冊/登入/綁定流程（FLOW + STORAGE: 6 需求）
 - Phase 12: Profile Sync 與 Avatar 整合（SYNC + AVATAR: 10 需求）
 - Phase 13: 前台整合（FRONTEND: 5 需求）
@@ -51,13 +51,13 @@ Progress: [██████████░░░░░░░░░░] 50% ove
 **Total v0.2 Requirements: 49**
 
 **Recent Activity:**
-- 2026-01-29: Phase 9 Plan 02 completed（Plugin 整合與 REST API deprecated 標記）
+- 2026-01-28: Phase 10 Plan 01 completed（Register Flow Shortcode 核心機制）
 - 2026-01-29: Phase 9 completed（標準 WordPress URL 機制 - 3 plans, 5 requirements）
 - 2026-01-29: Phase 8 completed（資料表架構與查詢 API - 2 plans, 3 requirements）
 - 2026-01-29: ROADMAP.md created for v0.2 Milestone（8 phases, 49 requirements）
 - 2026-01-28: Phase 2 completed（Webhook 系統）
 
-*Updated: 2026-01-29 after Phase 9-02 execution*
+*Updated: 2026-01-28 after Phase 10-01 execution*
 
 ## Accumulated Context
 
@@ -73,6 +73,13 @@ Recent decisions affecting current work:
 - **NSLContinuePageRenderException**: 完美處理 LINE 瀏覽器問題
 - **Register Flow Page + Shortcode**: 靈活整合、可放任何頁面
 - **LIFF 延後到 v0.3**: Nextend 架構已足夠,先驗證再決定
+
+**Phase 10 Implementation Decisions:**
+- **Transient API 儲存 LINE profile**: 10 分鐘 TTL，key pattern: buygo_line_profile_{state}
+- **動態 shortcode 註冊**: OAuth callback 偵測到新用戶時才註冊，避免靜態全域註冊
+- **Shortcode 雙參數模式**: 接受 exception_data（動態註冊）或 URL state（頁面重定向）
+- **完整例外流程處理**: switch 語句覆蓋 FLOW_REGISTER 和 FLOW_LINK
+- **Fallback 表單機制**: 當未設定 Register Flow Page 時在 wp-login.php 顯示
 
 **Phase 9 Implementation Decisions:**
 - **NSLContinuePageRenderException 用於流程控制**: 非錯誤例外,讓 WordPress 繼續渲染頁面,攜帶 LINE profile 和 state_data
@@ -126,12 +133,12 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-01-29 05:38
-Stopped at: Phase 9 all plans complete
+Last session: 2026-01-28 22:25
+Stopped at: Phase 10 Plan 01 complete
 Resume file: None
-Resume: Ready to start Phase 10 (Register Flow Page 系統)
+Resume: Ready to continue Phase 10 (Plans 02-03)
 
 **Next steps:**
-1. Run `/gsd:plan-phase 10` to create execution plans for Phase 10
-2. Phase 10 will implement Register Flow Page + shortcode
-3. Phase 11 will implement complete registration/login/binding flows
+1. Run `/gsd:execute-plan 10-02` - Form Submission Handler（表單提交處理）
+2. Run `/gsd:execute-plan 10-03` - Settings Integration（設定頁面整合）
+3. Phase 10 completion will unlock Phase 11 (完整註冊/登入/綁定流程)
