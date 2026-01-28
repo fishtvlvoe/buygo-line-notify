@@ -147,6 +147,14 @@ class Login_API {
         $code = $request->get_param('code');
         $state = $request->get_param('state');
 
+        // Debug: 記錄 callback 收到的參數
+        Logger::get_instance()->log('debug', [
+            'message' => 'Callback received',
+            'code' => $code ? substr($code, 0, 20) . '...' : 'null',
+            'state' => $state,
+            'all_params' => $request->get_params(),
+        ]);
+
         // Handle callback (verify state + exchange token + get profile)
         $result = $this->login_service->handle_callback($code, $state);
 

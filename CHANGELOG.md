@@ -1,6 +1,32 @@
 # Changelog
 
-## 2026-01-29
+## 2026-01-29 (Session 2)
+
+### 修正 (fix)
+
+#### Phase 15-04: LINE Login 設定頁面按鈕修正
+
+**問題**：
+- 設定頁面的「使用 LINE 登入測試」按鈕直接連結到 REST API endpoint
+- API 返回 JSON 而不是重導向，導致顯示亂碼頁面
+- 無法正確跳轉到 LINE 授權頁面
+
+**解決方案**：
+- 將 `<a>` 連結改為 `<button>` 按鈕
+- 加入 JavaScript fetch 呼叫 API 取得 authorize_url
+- 取得 URL 後自動導向到 LINE 授權頁面
+
+**變更檔案**：
+- `includes/admin/views/settings-page.php` - 改用 JavaScript 處理按鈕點擊
+
+**狀態**：因環境問題（Cloudflare Tunnel + WordPress URL 設定）未完成測試
+
+**Commits**：
+- 待提交
+
+---
+
+## 2026-01-29 (Session 1)
 
 ### 修正 (fix)
 

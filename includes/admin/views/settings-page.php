@@ -134,18 +134,51 @@ if (!defined('ABSPATH')) {
                         <label>測試登入</label>
                     </th>
                     <td>
-                        <?php
-                        $authorize_url = add_query_arg(
-                            'redirect_url',
-                            urlencode(admin_url('admin.php?page=buygo-line-notify-settings')),
-                            rest_url('buygo-line-notify/v1/login/authorize')
-                        );
-                        ?>
-                        <a href="<?php echo esc_url($authorize_url); ?>"
-                           class="button">
+                        <button type="button"
+                                id="line-login-test"
+                                class="button">
                             使用 LINE 登入測試
-                        </a>
+                        </button>
+                        <span id="line-login-loading" style="display:none; margin-left: 10px;">載入中...</span>
                         <p class="description">點擊測試 LINE Login 流程</p>
+
+                        <script>
+                        document.getElementById('line-login-test').addEventListener('click', function() {
+                            const btn = this;
+                            const loading = document.getElementById('line-login-loading');
+
+                            // 禁用按鈕
+                            btn.disabled = true;
+                            loading.style.display = 'inline';
+
+                            // 取得 authorize URL
+                            const redirectUrl = '<?php echo esc_js(admin_url('admin.php?page=buygo-line-notify-settings')); ?>';
+                            const apiUrl = '<?php echo esc_js(rest_url('buygo-line-notify/v1/login/authorize')); ?>' +
+                                          '?redirect_url=' + encodeURIComponent(redirectUrl);
+
+                            fetch(apiUrl, {
+                                method: 'GET',
+                                credentials: 'same-origin'
+                            })
+                            .then(response => response.json())
+                            .then(data => {
+                                if (data.success && data.authorize_url) {
+                                    // 重導向到 LINE 授權頁面
+                                    window.location.href = data.authorize_url;
+                                } else {
+                                    alert('取得授權 URL 失敗');
+                                    btn.disabled = false;
+                                    loading.style.display = 'none';
+                                }
+                            })
+                            .catch(error => {
+                                console.error('Error:', error);
+                                alert('發生錯誤：' + error.message);
+                                btn.disabled = false;
+                                loading.style.display = 'none';
+                            });
+                        });
+                        </script>
                     </td>
                 </tr>
 
