@@ -42,10 +42,21 @@ final class Plugin
     {
         RetryDispatcher::register_hooks();
 
+        // 啟動 Session（LINE Login StateManager 需要）
+        if (!session_id()) {
+            session_start();
+        }
+
         // 註冊 REST API（Webhook endpoint）
         \add_action('rest_api_init', function () {
             $webhook_api = new \BuygoLineNotify\Api\Webhook_API();
             $webhook_api->register_routes();
+        });
+
+        // 註冊 REST API（LINE Login endpoints）
+        \add_action('rest_api_init', function () {
+            $login_api = new \BuygoLineNotify\Api\Login_API();
+            $login_api->register_routes();
         });
 
         // 註冊 Cron handler（非 FastCGI 環境的背景處理）
@@ -72,8 +83,14 @@ final class Plugin
         include_once BuygoLineNotify_PLUGIN_DIR . 'includes/services/class-webhook-verifier.php';
         include_once BuygoLineNotify_PLUGIN_DIR . 'includes/services/class-webhook-handler.php';
 
+        // 載入 LINE Login 相關服務
+        include_once BuygoLineNotify_PLUGIN_DIR . 'includes/services/class-state-manager.php';
+        include_once BuygoLineNotify_PLUGIN_DIR . 'includes/services/class-login-service.php';
+        include_once BuygoLineNotify_PLUGIN_DIR . 'includes/services/class-user-service.php';
+
         // 載入 API 類別
         include_once BuygoLineNotify_PLUGIN_DIR . 'includes/api/class-webhook-api.php';
+        include_once BuygoLineNotify_PLUGIN_DIR . 'includes/api/class-login-api.php';
 
         // 載入 Facade（供其他外掛使用）
         include_once BuygoLineNotify_PLUGIN_DIR . 'includes/class-buygo-line-notify.php';
