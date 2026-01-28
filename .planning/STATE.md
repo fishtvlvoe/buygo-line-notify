@@ -12,25 +12,25 @@ See: .planning/PROJECT.md (updated 2026-01-29)
 
 Milestone: v0.2 (LINE Login 完整重構)
 Phase: 9 of 15 (標準 WordPress URL 機制)
-Plan: 1 of 1
+Plan: 3 of 3
 Status: Phase complete
-Last activity: 2026-01-29 — Completed Plan 09-01: Login Handler 基礎架構
+Last activity: 2026-01-29 — Completed Plan 09-03: URL Filter Service 整合
 
-Progress: [██████████░░░░░░░░░░] 50% overall (2/7 v0.1 phases completed, 2/8 v0.2 phases started)
+Progress: [██████████░░░░░░░░░░] 50% overall (2/7 v0.1 phases completed, 2/8 v0.2 phases complete)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 9 (Phase 1: 4 plans, Phase 2: 2 plans, Phase 8: 2 plans, Phase 9: 1 plan)
+- Total plans completed: 11 (Phase 1: 4 plans, Phase 2: 2 plans, Phase 8: 2 plans, Phase 9: 3 plans)
 - Average duration: ~3 min per plan
-- Total execution time: ~33 min (v0.1 + v0.2)
+- Total execution time: ~35 min (v0.1 + v0.2)
 
 **By Milestone:**
 
 | Milestone | Phases | Plans | Requirements | Completion |
 |-----------|--------|-------|--------------|------------|
 | v0.1 基礎架構 | 2/7 | 6/TBD | 24/~40 | Partial (Phase 1-2 完成) |
-| v0.2 LINE Login 重構 | 2/8 | 3/TBD | 8/49 | Phase 8-9 complete |
+| v0.2 LINE Login 重構 | 2/8 | 5/TBD | 8/49 | Phase 8-9 complete |
 | v0.3 進階功能 | 0/TBD | 0/TBD | 0/TBD | Not planned |
 
 **v0.1 Milestone Summary (Partial Complete):**
@@ -51,13 +51,13 @@ Progress: [██████████░░░░░░░░░░] 50% ove
 **Total v0.2 Requirements: 49**
 
 **Recent Activity:**
-- 2026-01-29: Phase 9 completed（標準 WordPress URL 機制 - 1 plan, 5 requirements）
+- 2026-01-29: Phase 9 Plan 03 completed（URL Filter Service 整合）
+- 2026-01-29: Phase 9 completed（標準 WordPress URL 機制 - 3 plans, 5 requirements）
 - 2026-01-29: Phase 8 completed（資料表架構與查詢 API - 2 plans, 3 requirements）
 - 2026-01-29: ROADMAP.md created for v0.2 Milestone（8 phases, 49 requirements）
 - 2026-01-28: Phase 2 completed（Webhook 系統）
-- 2026-01-28: Phase 1 completed（基礎設施與設定）
 
-*Updated: 2026-01-29 after Phase 9 execution*
+*Updated: 2026-01-29 after Phase 9-03 execution*
 
 ## Accumulated Context
 
@@ -78,6 +78,8 @@ Recent decisions affecting current work:
 - **NSLContinuePageRenderException 用於流程控制**: 非錯誤例外,讓 WordPress 繼續渲染頁面,攜帶 LINE profile 和 state_data
 - **StateManager 整合位置**: authorize 階段由 LoginService 內部處理,callback 階段在 Login_Handler 首先驗證
 - **標準 WordPress URL 取代 REST API**: wp-login.php?loginSocial=buygo-line 解決 REST API HTML 輸出問題
+- **login_url filter 預設關閉**: 避免影響標準 WordPress 登入行為,可透過設定啟用
+- **wp_logout 清除 session 資料**: 登出時清除 LINE profile 和 state,但不清除 Transient（StateManager 負責）
 
 **Phase 8 Implementation Decisions:**
 - **對齊 Nextend wp_social_users 結構**: 完全採用 Nextend 欄位命名，確保架構純粹性
@@ -121,8 +123,8 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-01-29 05:30
-Stopped at: Phase 9 execution complete
+Last session: 2026-01-29 13:25
+Stopped at: Phase 9 all plans complete
 Resume file: None
 Resume: Ready to start Phase 10 (Register Flow Page 系統)
 
