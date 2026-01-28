@@ -220,11 +220,12 @@ Plans:
   4. NSLContinuePageRenderException 例外類別已建立,可正確被捕捉與處理
   5. Login_Handler 已整合到 Plugin,login_init hook 正確註冊
 
-**Plans**: 2 plans in 2 waves
+**Plans**: 3 plans in 2 waves
 
 Plans:
-- [ ] 09-01-PLAN.md — Login Handler 基礎架構（NSLContinuePageRenderException、Login_Handler、LoginService 更新）
-- [ ] 09-02-PLAN.md — 整合 Login_Handler 到 Plugin 並標記 REST API deprecated
+- [x] 09-01-PLAN.md — Login Handler 基礎架構（NSLContinuePageRenderException、Login_Handler、LoginService 更新）
+- [x] 09-02-PLAN.md — 整合 Login_Handler 到 Plugin 並標記 REST API deprecated
+- [x] 09-03-PLAN.md — URL Filter Service（login_url/logout_url filters）
 
 ### Phase 10: Register Flow Page 系統
 **Goal**: 實作 Register Flow Page 機制,讓 OAuth callback 後可在任意頁面顯示註冊表單
@@ -360,7 +361,7 @@ Plans:
 | 7. 測試與文件（舊版） | 0/TBD | ⏸️ Deferred to v0.3 | - |
 | **v0.2 Milestone (Nextend 架構重構)** | | | |
 | 8. 資料表架構與查詢 API | 2/2 | ✅ Completed | 2026-01-29 |
-| 9. 標準 WordPress URL 機制 | 0/2 | 🔄 Planned | - |
+| 9. 標準 WordPress URL 機制 | 3/3 | ✅ Completed | 2026-01-29 |
 | 10. Register Flow Page 系統 | 0/TBD | Not started | - |
 | 11. 完整註冊/登入/綁定流程 | 0/TBD | Not started | - |
 | 12. Profile Sync 與 Avatar 整合 | 0/TBD | Not started | - |

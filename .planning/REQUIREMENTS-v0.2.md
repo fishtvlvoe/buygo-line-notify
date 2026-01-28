@@ -432,12 +432,12 @@
 | ARCH-02 | Phase 8 | Pending |
 | ARCH-03 | Phase 8 | Pending |
 | **URL: 標準 WordPress URL 機制** | | |
-| URL-01 | Phase 9 | Pending |
-| URL-02 | Phase 9 | Pending |
-| URL-03 | Phase 9 | Pending |
-| URL-04 | Phase 9 | Pending |
+| URL-01 | Phase 9 | Complete |
+| URL-02 | Phase 9 | Complete |
+| URL-03 | Phase 9 | Complete |
+| URL-04 | Phase 9 | Complete |
 | **NSL: NSLContinuePageRenderException 模式** | | |
-| NSL-01 | Phase 9 | Pending |
+| NSL-01 | Phase 9 | Complete |
 | NSL-02 | Phase 10 | Pending |
 | NSL-03 | Phase 10 | Pending |
 | NSL-04 | Phase 10 | Pending |
