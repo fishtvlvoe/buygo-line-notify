@@ -16,140 +16,209 @@ if (!defined('ABSPATH')) {
 /**
  * LINE User Service class
  *
- * 提供 LINE 用戶綁定的寫入和查詢 API
- * 實作混合儲存：
- * - user_meta: 快速查詢（有 WordPress 快取）
- * - bindings 表: 完整歷史和進階查詢
+ * v0.2 重構：使用 wp_buygo_line_users 專用表作為單一真實來源
+ *
+ * 核心方法（新 API，推薦使用）：
+ * - getUserByLineUid()   - 根據 LINE UID 查詢 WordPress User ID
+ * - getLineUidByUserId() - 根據 WordPress User ID 查詢 LINE UID
+ * - isUserLinked()       - 檢查用戶是否已綁定 LINE
+ * - linkUser()           - 建立用戶與 LINE 的綁定關係
+ * - unlinkUser()         - 解除綁定（硬刪除，與 Nextend 一致）
+ * - getBinding()         - 取得完整綁定資料
+ * - getBindingByLineUid() - 根據 LINE UID 取得完整綁定資料
+ *
+ * 舊方法（已 deprecated，保留向後相容）：
+ * - bind_line_account()  - 改呼叫 linkUser()
+ * - get_user_line_id()   - 改呼叫 getLineUidByUserId()
+ * - get_line_user()      - 使用新表查詢
+ * - get_user_binding()   - 改呼叫 getBinding()
+ * - unbind_line_account() - 改呼叫 unlinkUser()
+ * - is_user_bound()      - 改呼叫 isUserLinked()
+ * - is_line_uid_bound()  - 使用 getUserByLineUid() 實作
+ * - get_user_id_by_line_uid() - 改呼叫 getUserByLineUid()
+ * - get_line_uid_by_user_id() - 改呼叫 getLineUidByUserId()
+ * - unbind_line_user()   - 改呼叫 unlinkUser()
  */
 class LineUserService {
 
-    /**
-     * 綁定 LINE 帳號到 WordPress 使用者
-     *
-     * 雙寫策略：custom table（主要）+ user_meta（相容性）
-     *
-     * @param int    $user_id WordPress 使用者 ID
-     * @param string $line_uid LINE 使用者 ID
-     * @param array  $profile LINE 個人資料 (displayName, pictureUrl)
-     * @return bool 綁定是否成功
-     */
-    public static function bind_line_account(int $user_id, string $line_uid, array $profile): bool {
-        global $wpdb;
-        $table_name = $wpdb->prefix . 'buygo_line_bindings';
+    // ========================================================================
+    // 新 API（v0.2，推薦使用）
+    // ========================================================================
 
-        // 檢查是否已綁定（同一 user_id 或 line_uid）
-        $existing = $wpdb->get_row(
+    /**
+     * 根據 LINE UID 查詢 WordPress User ID
+     *
+     * @since 2.0.0
+     * @param string $line_uid LINE 使用者 ID
+     * @return int|null WordPress User ID，未找到則返回 null
+     */
+    public static function getUserByLineUid(string $line_uid): ?int {
+        global $wpdb;
+        $table_name = $wpdb->prefix . 'buygo_line_users';
+
+        $user_id = $wpdb->get_var(
             $wpdb->prepare(
-                "SELECT * FROM {$table_name} WHERE user_id = %d OR line_uid = %s",
-                $user_id,
+                "SELECT user_id FROM {$table_name} WHERE identifier = %s AND type = 'line' LIMIT 1",
                 $line_uid
             )
         );
 
-        if ($existing) {
-            // 更新現有綁定
-            $result = $wpdb->update(
-                $table_name,
-                [
-                    'user_id'      => $user_id,
-                    'line_uid'     => $line_uid,
-                    'display_name' => $profile['displayName'] ?? '',
-                    'picture_url'  => $profile['pictureUrl'] ?? '',
-                    'status'       => 'active',
-                ],
-                ['id' => $existing->id],
-                ['%d', '%s', '%s', '%s', '%s'],
-                ['%d']
-            );
-        } else {
-            // 新增綁定
-            $result = $wpdb->insert(
-                $table_name,
-                [
-                    'user_id'      => $user_id,
-                    'line_uid'     => $line_uid,
-                    'display_name' => $profile['displayName'] ?? '',
-                    'picture_url'  => $profile['pictureUrl'] ?? '',
-                    'status'       => 'active',
-                ],
-                ['%d', '%s', '%s', '%s', '%s']
-            );
-        }
-
-        if ($result === false) {
-            return false;
-        }
-
-        // 同時寫入 user_meta（向後相容）
-        update_user_meta($user_id, 'buygo_line_user_id', $line_uid);
-        update_user_meta($user_id, 'buygo_line_display_name', $profile['displayName'] ?? '');
-        update_user_meta($user_id, 'buygo_line_picture_url', $profile['pictureUrl'] ?? '');
-
-        return true;
+        return $user_id ? (int) $user_id : null;
     }
 
     /**
-     * 根據 user_id 取得 LINE UID
+     * 根據 WordPress User ID 查詢 LINE UID
      *
-     * 優先從 user_meta 讀取（有 WordPress 快取）
-     *
+     * @since 2.0.0
      * @param int $user_id WordPress 使用者 ID
-     * @return string|null LINE UID，未綁定則返回 null
+     * @return string|null LINE UID，未找到則返回 null
      */
-    public static function get_user_line_id(int $user_id): ?string {
-        // 優先從 user_meta（WordPress 快取）
-        $line_id = get_user_meta($user_id, 'buygo_line_user_id', true);
-
-        if (!empty($line_id)) {
-            return $line_id;
-        }
-
-        // 備用：從 custom table 查詢
+    public static function getLineUidByUserId(int $user_id): ?string {
         global $wpdb;
-        $table_name = $wpdb->prefix . 'buygo_line_bindings';
-        $line_id = $wpdb->get_var(
+        $table_name = $wpdb->prefix . 'buygo_line_users';
+
+        $line_uid = $wpdb->get_var(
             $wpdb->prepare(
-                "SELECT line_uid FROM {$table_name} WHERE user_id = %d AND status = 'active'",
+                "SELECT identifier FROM {$table_name} WHERE user_id = %d AND type = 'line' LIMIT 1",
                 $user_id
             )
         );
 
-        return $line_id ?: null;
+        return $line_uid ?: null;
     }
 
     /**
-     * 根據 line_uid 取得完整綁定資料
+     * 檢查用戶是否已綁定 LINE
      *
-     * @param string $line_uid LINE 使用者 ID
-     * @return object|null 綁定資料物件，未找到則返回 null
+     * @since 2.0.0
+     * @param int $user_id WordPress 使用者 ID
+     * @return bool 是否已綁定
      */
-    public static function get_line_user(string $line_uid): ?object {
-        global $wpdb;
-        $table_name = $wpdb->prefix . 'buygo_line_bindings';
+    public static function isUserLinked(int $user_id): bool {
+        return !is_null(self::getLineUidByUserId($user_id));
+    }
 
-        $user = $wpdb->get_row(
-            $wpdb->prepare(
-                "SELECT * FROM {$table_name} WHERE line_uid = %s AND status = 'active'",
-                $line_uid
-            )
+    /**
+     * 建立用戶與 LINE 的綁定關係
+     *
+     * @since 2.0.0
+     * @param int    $user_id         WordPress 使用者 ID
+     * @param string $line_uid        LINE 使用者 ID
+     * @param bool   $is_registration 是否為註冊流程（true: 設定 register_date）
+     * @return bool 是否成功
+     */
+    public static function linkUser(int $user_id, string $line_uid, bool $is_registration = false): bool {
+        global $wpdb;
+        $table_name = $wpdb->prefix . 'buygo_line_users';
+
+        // 檢查 LINE UID 是否已綁定其他用戶
+        $existing_user_id = self::getUserByLineUid($line_uid);
+        if ($existing_user_id && $existing_user_id !== $user_id) {
+            // LINE UID 已綁定其他用戶，拒絕
+            return false;
+        }
+
+        // 檢查用戶是否已綁定其他 LINE
+        $existing_line_uid = self::getLineUidByUserId($user_id);
+        if ($existing_line_uid && $existing_line_uid !== $line_uid) {
+            // 用戶已綁定其他 LINE，拒絕
+            return false;
+        }
+
+        // 若已存在相同綁定，更新 link_date
+        if ($existing_user_id === $user_id && $existing_line_uid === $line_uid) {
+            $update_data = [
+                'link_date' => current_time('mysql'),
+            ];
+
+            // 若為註冊流程且 register_date 為 NULL，設定 register_date
+            if ($is_registration) {
+                $existing = $wpdb->get_row(
+                    $wpdb->prepare(
+                        "SELECT register_date FROM {$table_name} WHERE user_id = %d AND identifier = %s AND type = 'line'",
+                        $user_id,
+                        $line_uid
+                    )
+                );
+
+                if (!$existing || is_null($existing->register_date)) {
+                    $update_data['register_date'] = current_time('mysql');
+                }
+            }
+
+            $result = $wpdb->update(
+                $table_name,
+                $update_data,
+                [
+                    'user_id'    => $user_id,
+                    'identifier' => $line_uid,
+                    'type'       => 'line',
+                ],
+                array_fill(0, count($update_data), '%s'),
+                ['%d', '%s', '%s']
+            );
+
+            return $result !== false;
+        }
+
+        // 新增綁定
+        $insert_data = [
+            'type'       => 'line',
+            'identifier' => $line_uid,
+            'user_id'    => $user_id,
+            'link_date'  => current_time('mysql'),
+        ];
+
+        if ($is_registration) {
+            $insert_data['register_date'] = current_time('mysql');
+        }
+
+        $result = $wpdb->insert(
+            $table_name,
+            $insert_data,
+            ['%s', '%s', '%d', '%s', '%s']
         );
 
-        return $user ?: null;
+        return $result !== false;
     }
 
     /**
-     * 根據 user_id 取得完整綁定資料
+     * 解除綁定（硬刪除，與 Nextend wp_social_users 一致）
      *
+     * @since 2.0.0
      * @param int $user_id WordPress 使用者 ID
-     * @return object|null 綁定資料物件，未找到則返回 null
+     * @return bool 是否成功
      */
-    public static function get_user_binding(int $user_id): ?object {
+    public static function unlinkUser(int $user_id): bool {
         global $wpdb;
-        $table_name = $wpdb->prefix . 'buygo_line_bindings';
+        $table_name = $wpdb->prefix . 'buygo_line_users';
+
+        $result = $wpdb->delete(
+            $table_name,
+            [
+                'user_id' => $user_id,
+                'type'    => 'line',
+            ],
+            ['%d', '%s']
+        );
+
+        return $result !== false;
+    }
+
+    /**
+     * 取得完整的綁定資料
+     *
+     * @since 2.0.0
+     * @param int $user_id WordPress 使用者 ID
+     * @return object|null 綁定資料物件（ID, type, identifier, user_id, register_date, link_date），未找到則返回 null
+     */
+    public static function getBinding(int $user_id): ?object {
+        global $wpdb;
+        $table_name = $wpdb->prefix . 'buygo_line_users';
 
         $binding = $wpdb->get_row(
             $wpdb->prepare(
-                "SELECT * FROM {$table_name} WHERE user_id = %d AND status = 'active'",
+                "SELECT * FROM {$table_name} WHERE user_id = %d AND type = 'line' LIMIT 1",
                 $user_id
             )
         );
@@ -158,55 +227,160 @@ class LineUserService {
     }
 
     /**
-     * 解除綁定（軟刪除）
+     * 根據 LINE UID 取得完整綁定資料
      *
-     * 將狀態設為 inactive，保留歷史記錄
+     * @since 2.0.0
+     * @param string $line_uid LINE 使用者 ID
+     * @return object|null 綁定資料物件（ID, type, identifier, user_id, register_date, link_date），未找到則返回 null
+     */
+    public static function getBindingByLineUid(string $line_uid): ?object {
+        global $wpdb;
+        $table_name = $wpdb->prefix . 'buygo_line_users';
+
+        $binding = $wpdb->get_row(
+            $wpdb->prepare(
+                "SELECT * FROM {$table_name} WHERE identifier = %s AND type = 'line' LIMIT 1",
+                $line_uid
+            )
+        );
+
+        return $binding ?: null;
+    }
+
+    // ========================================================================
+    // 舊 API（已 deprecated，保留向後相容）
+    // ========================================================================
+
+    /**
+     * 綁定 LINE 帳號到 WordPress 使用者
      *
+     * @deprecated 2.0.0 Use linkUser() instead.
+     * @param int    $user_id WordPress 使用者 ID
+     * @param string $line_uid LINE 使用者 ID
+     * @param array  $profile LINE 個人資料 (displayName, pictureUrl)
+     * @return bool 綁定是否成功
+     */
+    public static function bind_line_account(int $user_id, string $line_uid, array $profile): bool {
+        // 使用新 API 建立綁定
+        $result = self::linkUser($user_id, $line_uid, false);
+
+        if ($result) {
+            // 維持向後相容：寫入 user_meta
+            update_user_meta($user_id, 'buygo_line_user_id', $line_uid);
+            update_user_meta($user_id, 'buygo_line_display_name', $profile['displayName'] ?? '');
+            update_user_meta($user_id, 'buygo_line_picture_url', $profile['pictureUrl'] ?? '');
+        }
+
+        return $result;
+    }
+
+    /**
+     * 根據 user_id 取得 LINE UID
+     *
+     * @deprecated 2.0.0 Use getLineUidByUserId() instead.
+     * @param int $user_id WordPress 使用者 ID
+     * @return string|null LINE UID，未綁定則返回 null
+     */
+    public static function get_user_line_id(int $user_id): ?string {
+        return self::getLineUidByUserId($user_id);
+    }
+
+    /**
+     * 根據 line_uid 取得完整綁定資料
+     *
+     * @deprecated 2.0.0 Use getBindingByLineUid() instead.
+     * @param string $line_uid LINE 使用者 ID
+     * @return object|null 綁定資料物件，未找到則返回 null
+     */
+    public static function get_line_user(string $line_uid): ?object {
+        return self::getBindingByLineUid($line_uid);
+    }
+
+    /**
+     * 根據 user_id 取得完整綁定資料
+     *
+     * @deprecated 2.0.0 Use getBinding() instead.
+     * @param int $user_id WordPress 使用者 ID
+     * @return object|null 綁定資料物件，未找到則返回 null
+     */
+    public static function get_user_binding(int $user_id): ?object {
+        return self::getBinding($user_id);
+    }
+
+    /**
+     * 解除綁定
+     *
+     * @deprecated 2.0.0 Use unlinkUser() instead.
      * @param int $user_id WordPress 使用者 ID
      * @return bool 是否成功解除綁定
      */
     public static function unbind_line_account(int $user_id): bool {
-        global $wpdb;
-        $table_name = $wpdb->prefix . 'buygo_line_bindings';
+        $result = self::unlinkUser($user_id);
 
-        // 更新資料表狀態為 inactive
-        $result = $wpdb->update(
-            $table_name,
-            ['status' => 'inactive'],
-            ['user_id' => $user_id],
-            ['%s'],
-            ['%d']
-        );
-
-        if ($result === false) {
-            return false;
+        if ($result) {
+            // 維持向後相容：清除 user_meta
+            delete_user_meta($user_id, 'buygo_line_user_id');
+            delete_user_meta($user_id, 'buygo_line_display_name');
+            delete_user_meta($user_id, 'buygo_line_picture_url');
         }
 
-        // 同時清除 user_meta
-        delete_user_meta($user_id, 'buygo_line_user_id');
-        delete_user_meta($user_id, 'buygo_line_display_name');
-        delete_user_meta($user_id, 'buygo_line_picture_url');
-
-        return true;
+        return $result;
     }
 
     /**
      * 檢查使用者是否已綁定 LINE
      *
+     * @deprecated 2.0.0 Use isUserLinked() instead.
      * @param int $user_id WordPress 使用者 ID
      * @return bool 是否已綁定
      */
     public static function is_user_bound(int $user_id): bool {
-        return !empty(self::get_user_line_id($user_id));
+        return self::isUserLinked($user_id);
     }
 
     /**
      * 檢查 LINE UID 是否已被綁定
      *
+     * @deprecated 2.0.0 Use getUserByLineUid() instead and check if result is not null.
      * @param string $line_uid LINE 使用者 ID
      * @return bool 是否已被綁定
      */
     public static function is_line_uid_bound(string $line_uid): bool {
-        return !is_null(self::get_line_user($line_uid));
+        return !is_null(self::getUserByLineUid($line_uid));
+    }
+
+    /**
+     * 根據 LINE UID 取得 user ID
+     *
+     * @deprecated 2.0.0 Use getUserByLineUid() instead.
+     * @param string $line_uid LINE 使用者 ID
+     * @return int|false User ID，未找到返回 false
+     */
+    public static function get_user_id_by_line_uid(string $line_uid) {
+        $user_id = self::getUserByLineUid($line_uid);
+        return $user_id ?: false;
+    }
+
+    /**
+     * 根據 user ID 取得 LINE UID
+     *
+     * @deprecated 2.0.0 Use getLineUidByUserId() instead.
+     * @param int $user_id WordPress 使用者 ID
+     * @return string|false LINE UID，未找到返回 false
+     */
+    public static function get_line_uid_by_user_id(int $user_id) {
+        $line_uid = self::getLineUidByUserId($user_id);
+        return $line_uid ?: false;
+    }
+
+    /**
+     * 解除綁定
+     *
+     * @deprecated 2.0.0 Use unlinkUser() instead.
+     * @param int $user_id WordPress 使用者 ID
+     * @return bool 是否成功
+     */
+    public static function unbind_line_user(int $user_id): bool {
+        return self::unlinkUser($user_id);
     }
 }
