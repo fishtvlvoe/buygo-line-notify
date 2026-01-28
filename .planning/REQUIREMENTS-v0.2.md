@@ -425,10 +425,74 @@
 
 ## Traceability
 
-需求對應到 Phase 的映射將在 ROADMAP.md 建立後填入。
+| Requirement | Phase | Status |
+|-------------|-------|--------|
+| **ARCH: 核心資料架構** | | |
+| ARCH-01 | Phase 8 | Pending |
+| ARCH-02 | Phase 8 | Pending |
+| ARCH-03 | Phase 8 | Pending |
+| **URL: 標準 WordPress URL 機制** | | |
+| URL-01 | Phase 9 | Pending |
+| URL-02 | Phase 9 | Pending |
+| URL-03 | Phase 9 | Pending |
+| URL-04 | Phase 9 | Pending |
+| **NSL: NSLContinuePageRenderException 模式** | | |
+| NSL-01 | Phase 9 | Pending |
+| NSL-02 | Phase 10 | Pending |
+| NSL-03 | Phase 10 | Pending |
+| NSL-04 | Phase 10 | Pending |
+| **RFP: Register Flow Page 系統** | | |
+| RFP-01 | Phase 10 | Pending |
+| RFP-02 | Phase 10 | Pending |
+| RFP-03 | Phase 10 | Pending |
+| RFP-04 | Phase 10 | Pending |
+| RFP-05 | Phase 10 | Pending |
+| **FLOW: 完整註冊/登入/綁定流程** | | |
+| FLOW-01 | Phase 11 | Pending |
+| FLOW-02 | Phase 11 | Pending |
+| FLOW-03 | Phase 11 | Pending |
+| FLOW-04 | Phase 11 | Pending |
+| FLOW-05 | Phase 11 | Pending |
+| **STORAGE: 持久化儲存系統整合** | | |
+| STORAGE-04 | Phase 11 | Pending |
+| **SYNC: Profile Sync 系統** | | |
+| SYNC-01 | Phase 12 | Pending |
+| SYNC-02 | Phase 12 | Pending |
+| SYNC-03 | Phase 12 | Pending |
+| SYNC-04 | Phase 12 | Pending |
+| SYNC-05 | Phase 12 | Pending |
+| **AVATAR: Avatar 整合** | | |
+| AVATAR-01 | Phase 12 | Pending |
+| AVATAR-02 | Phase 12 | Pending |
+| AVATAR-03 | Phase 12 | Pending |
+| AVATAR-04 | Phase 12 | Pending |
+| AVATAR-05 | Phase 12 | Pending |
+| **FRONTEND: 前台整合** | | |
+| FRONTEND-01 | Phase 13 | Pending |
+| FRONTEND-02 | Phase 13 | Pending |
+| FRONTEND-03 | Phase 13 | Pending |
+| FRONTEND-04 | Phase 13 | Pending |
+| FRONTEND-05 | Phase 13 | Pending |
+| **BACKEND: 後台管理** | | |
+| BACKEND-01 | Phase 14 | Pending |
+| BACKEND-02 | Phase 14 | Pending |
+| BACKEND-03 | Phase 14 | Pending |
+| BACKEND-04 | Phase 14 | Pending |
+| BACKEND-05 | Phase 14 | Pending |
+| **TEST: 測試** | | |
+| TEST-01 | Phase 15 | Pending |
+| TEST-02 | Phase 15 | Pending |
+| TEST-03 | Phase 15 | Pending |
+| TEST-04 | Phase 15 | Pending |
+| **DOC: 文件** | | |
+| DOC-01 | Phase 15 | Pending |
+| DOC-02 | Phase 15 | Pending |
+| DOC-03 | Phase 15 | Pending |
+
+**Coverage:** 49/49 requirements mapped ✓
 
 ---
 
 *Requirements defined: 2026-01-29*
 *Based on: NEXTEND-SOCIAL-LOGIN-ANALYSIS.md*
-*Total requirements: 50 (10 categories)*
+*Total requirements: 49 (10 categories)*
