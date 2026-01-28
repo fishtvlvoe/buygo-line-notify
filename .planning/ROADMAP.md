@@ -25,7 +25,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 ### v0.2 Milestone (LINE Login 完整重構 - Nextend 架構)
 
 - [x] **Phase 8: 資料表架構與查詢 API** - wp_buygo_line_users 專用表、資料遷移、查詢 API
-- [ ] **Phase 9: 標準 WordPress URL 機制** - login_init hook、OAuth callback、取代 REST API
+- [x] **Phase 9: 標準 WordPress URL 機制** - login_init hook、OAuth callback、取代 REST API
 - [ ] **Phase 10: Register Flow Page 系統** - NSLContinuePageRenderException、Shortcode、表單處理
 - [ ] **Phase 11: 完整註冊/登入/綁定流程** - 新用戶註冊、Auto-link、已登入綁定、登入流程
 - [ ] **Phase 12: Profile Sync 與 Avatar 整合** - Profile 同步、Avatar hook、快取機制
@@ -241,10 +241,12 @@ Plans:
   4. 表單提交處理正確（驗證 State、建立 WP 用戶、寫入 wp_buygo_line_users、自動登入）
   5. 註冊成功後用戶被導回原始頁面（從 StateManager 讀取 returnUrl）
 
-**Plans**: TBD
+**Plans**: 3 plans in 2 waves
 
 Plans:
-- [ ] 10-01: [TBD during planning]
+- [ ] 10-01-PLAN.md — 核心 Shortcode + Transient 儲存（RegisterFlowShortcode、Login_Handler 擴展）
+- [ ] 10-02-PLAN.md — 表單提交處理（handle_register_submission、Auto-link 機制）
+- [ ] 10-03-PLAN.md — 後台設定 + 驗證（Register Flow Page 選擇器、流程驗證 checkpoint）
 
 ### Phase 11: 完整註冊/登入/綁定流程
 **Goal**: 實作完整的新用戶註冊、Auto-link、已登入綁定、登入流程
@@ -362,7 +364,7 @@ Plans:
 | **v0.2 Milestone (Nextend 架構重構)** | | | |
 | 8. 資料表架構與查詢 API | 2/2 | ✅ Completed | 2026-01-29 |
 | 9. 標準 WordPress URL 機制 | 3/3 | ✅ Completed | 2026-01-29 |
-| 10. Register Flow Page 系統 | 0/TBD | Not started | - |
+| 10. Register Flow Page 系統 | 0/3 | 📋 Planned | - |
 | 11. 完整註冊/登入/綁定流程 | 0/TBD | Not started | - |
 | 12. Profile Sync 與 Avatar 整合 | 0/TBD | Not started | - |
 | 13. 前台整合 | 0/TBD | Not started | - |
