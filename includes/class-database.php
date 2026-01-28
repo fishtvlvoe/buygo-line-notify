@@ -216,14 +216,31 @@ class Database {
     }
 
     /**
+     * 取得遷移狀態
+     *
+     * @return array 遷移狀態資訊
+     */
+    public static function get_migration_status(): array {
+        return get_option('buygo_line_migration_status', []);
+    }
+
+    /**
      * 刪除資料表（外掛移除時使用）
      */
     public static function drop_tables(): void {
         global $wpdb;
 
-        $table_name = $wpdb->prefix . 'buygo_line_bindings';
-        $wpdb->query("DROP TABLE IF EXISTS {$table_name}");
+        // 刪除舊表
+        $old_table = $wpdb->prefix . 'buygo_line_bindings';
+        $wpdb->query("DROP TABLE IF EXISTS {$old_table}");
 
-        delete_option('buygo_line_notify_db_version');
+        // 刪除新表
+        $new_table = $wpdb->prefix . 'buygo_line_users';
+        $wpdb->query("DROP TABLE IF EXISTS {$new_table}");
+
+        // 刪除所有相關 options
+        delete_option('buygo_line_notify_db_version'); // 舊版本 key（保留向後相容）
+        delete_option('buygo_line_db_version');
+        delete_option('buygo_line_migration_status');
     }
 }
