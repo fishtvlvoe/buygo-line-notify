@@ -80,15 +80,21 @@ class Webhook_API
             return rest_ensure_response(['success' => true, 'message' => 'Verify event received']);
         }
 
-        // 第四步：處理正常事件（目前只記錄，Handler 在 Plan 02 實作）
-        $event_count = count($data['events']);
-        error_log("BUYGO_LINE_NOTIFY: Received {$event_count} event(s), processing deferred to Plan 02");
+        // 第四步：背景處理事件
+        if (function_exists('fastcgi_finish_request')) {
+            // FastCGI 環境：先返回 200，然後背景處理
+            $handler = new \BuygoLineNotify\Services\WebhookHandler();
+            add_action('shutdown', function () use ($data, $handler) {
+                fastcgi_finish_request(); // 釋放連線
+                $handler->process_events($data['events']);
+            });
+        } else {
+            // 非 FastCGI 環境：使用 WP_Cron
+            wp_schedule_single_event(time(), 'buygo_process_line_webhook', [$data['events']]);
+        }
 
-        // 觸發 Hook 讓其他外掛處理（Plan 02）
-        // do_action('buygo_line_notify/webhook/events', $data['events']);
-
-        // 立即返回 200（LINE 要求 5 秒內回應）
-        return rest_ensure_response(['success' => true, 'events_received' => $event_count]);
+        // 第五步：立即返回 200（LINE 要求 5 秒內回應）
+        return rest_ensure_response(['success' => true]);
     }
 
     /**
