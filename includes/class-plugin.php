@@ -42,11 +42,6 @@ final class Plugin
     {
         RetryDispatcher::register_hooks();
 
-        // 啟動 Session（LINE Login StateManager 需要）
-        if (!session_id()) {
-            session_start();
-        }
-
         // 註冊 REST API（Webhook endpoint）
         \add_action('rest_api_init', function () {
             $webhook_api = new \BuygoLineNotify\Api\Webhook_API();

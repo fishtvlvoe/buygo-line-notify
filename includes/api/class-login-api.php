@@ -120,7 +120,8 @@ class Login_API {
         // Get authorize URL from LoginService
         $authorize_url = $this->login_service->get_authorize_url($redirect_url);
 
-        Logger::log('INFO', 'Authorize URL requested', [
+        Logger::get_instance()->log('info', [
+            'message' => 'Authorize URL requested',
             'redirect_url' => $redirect_url,
         ]);
 
@@ -151,7 +152,8 @@ class Login_API {
 
         if (is_wp_error($result)) {
             // Callback failed, redirect to redirect_url with error
-            Logger::log('ERROR', 'Callback failed', [
+            Logger::get_instance()->log('error', [
+                'message' => 'Callback failed',
                 'error' => $result->get_error_message(),
             ]);
 
@@ -177,7 +179,8 @@ class Login_API {
             // LINE UID already bound, login that user
             wp_set_auth_cookie($existing_user_id, true);
 
-            Logger::log('INFO', 'User logged in via LINE', [
+            Logger::get_instance()->log('info', [
+                'message' => 'User logged in via LINE',
                 'user_id' => $existing_user_id,
                 'line_uid' => $line_uid,
             ]);
@@ -195,7 +198,8 @@ class Login_API {
             $bind_result = $this->user_service->bind_line_to_user($user_id, $profile);
 
             if (is_wp_error($bind_result)) {
-                Logger::log('ERROR', 'Failed to bind LINE to user', [
+                Logger::get_instance()->log('error', [
+                    'message' => 'Failed to bind LINE to user',
                     'user_id' => $user_id,
                     'line_uid' => $line_uid,
                     'error' => $bind_result->get_error_message(),
@@ -210,7 +214,8 @@ class Login_API {
             // Bind successful, login user
             wp_set_auth_cookie($user_id, true);
 
-            Logger::log('INFO', 'LINE bound to existing user', [
+            Logger::get_instance()->log('info', [
+                'message' => 'LINE bound to existing user',
                 'user_id' => $user_id,
                 'line_uid' => $line_uid,
             ]);
@@ -223,7 +228,8 @@ class Login_API {
         $new_user_id = $this->user_service->create_user_from_line($profile);
 
         if (is_wp_error($new_user_id)) {
-            Logger::log('ERROR', 'Failed to create user from LINE', [
+            Logger::get_instance()->log('error', [
+                'message' => 'Failed to create user from LINE',
                 'line_uid' => $line_uid,
                 'error' => $new_user_id->get_error_message(),
             ]);
@@ -237,7 +243,8 @@ class Login_API {
         // User created successfully, login user
         wp_set_auth_cookie($new_user_id, true);
 
-        Logger::log('INFO', 'New user created from LINE', [
+        Logger::get_instance()->log('info', [
+            'message' => 'New user created from LINE',
             'user_id' => $new_user_id,
             'line_uid' => $line_uid,
         ]);
@@ -276,7 +283,8 @@ class Login_API {
         // Generate authorize URL with user_id in state
         $authorize_url = $this->login_service->get_authorize_url($redirect_url, $user_id);
 
-        Logger::log('INFO', 'Bind authorize URL requested', [
+        Logger::get_instance()->log('info', [
+            'message' => 'Bind authorize URL requested',
             'user_id' => $user_id,
             'redirect_url' => $redirect_url,
         ]);
