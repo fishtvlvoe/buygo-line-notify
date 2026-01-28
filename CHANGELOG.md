@@ -19,10 +19,16 @@
 **變更檔案**：
 - `includes/admin/views/settings-page.php` - 改用 JavaScript 處理按鈕點擊
 
-**狀態**：因環境問題（Cloudflare Tunnel + WordPress URL 設定）未完成測試
+**測試結果**：✅ 成功
+- 完整 OAuth 2.0 流程驗證通過
+- State 儲存與驗證正常（Transient API）
+- Token 交換成功
+- LINE Profile 取得成功（U823e48d899eb99be6fb49d53609048d9 "Fish 老魚"）
+- 新用戶建立成功（user_id 21，subscriber 角色）
+- 用戶登入成功並設定 auth cookie
 
 **Commits**：
-- 待提交
+- `b4d976d` - fix(15-04): 修正設定頁面按鈕實作，改用 JavaScript fetch 取得 authorize_url
 
 ---
 

@@ -193,6 +193,10 @@ class Login_API {
                 'line_uid' => $line_uid,
             ]);
 
+            // 支援 WordPress login_redirect filter（與其他登入導向外掛相容）
+            $user = get_user_by('id', $existing_user_id);
+            $redirect_url = apply_filters('login_redirect', $redirect_url, '', $user);
+
             wp_redirect($redirect_url);
             exit;
         }
@@ -228,6 +232,10 @@ class Login_API {
                 'line_uid' => $line_uid,
             ]);
 
+            // 支援 WordPress login_redirect filter
+            $user = get_user_by('id', $user_id);
+            $redirect_url = apply_filters('login_redirect', $redirect_url, '', $user);
+
             wp_redirect($redirect_url);
             exit;
         }
@@ -256,6 +264,10 @@ class Login_API {
             'user_id' => $new_user_id,
             'line_uid' => $line_uid,
         ]);
+
+        // 支援 WordPress login_redirect filter
+        $user = get_user_by('id', $new_user_id);
+        $redirect_url = apply_filters('login_redirect', $redirect_url, '', $user);
 
         wp_redirect($redirect_url);
         exit;
