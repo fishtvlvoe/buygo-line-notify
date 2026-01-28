@@ -24,7 +24,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 
 ### v0.2 Milestone (LINE Login 完整重構 - Nextend 架構)
 
-- [ ] **Phase 8: 資料表架構與查詢 API** - wp_buygo_line_users 專用表、資料遷移、查詢 API
+- [x] **Phase 8: 資料表架構與查詢 API** - wp_buygo_line_users 專用表、資料遷移、查詢 API
 - [ ] **Phase 9: 標準 WordPress URL 機制** - login_init hook、OAuth callback、取代 REST API
 - [ ] **Phase 10: Register Flow Page 系統** - NSLContinuePageRenderException、Shortcode、表單處理
 - [ ] **Phase 11: 完整註冊/登入/綁定流程** - 新用戶註冊、Auto-link、已登入綁定、登入流程
@@ -198,19 +198,13 @@ Plans:
   2. 舊的 `wp_buygo_line_bindings` 資料已成功遷移到新表（register_date、link_date 正確對應）
   3. 查詢 API 可正確運作（getUserByLineUid、getLineUidByUserId、isUserLinked、linkUser、unlinkUser）
   4. 遷移狀態已記錄到 wp_options（buygo_line_migration_status），舊表保留未刪除
-
-**Plans**: 2 plans
-
-Plans:
-- [x] 08-01: 建立 wp_buygo_line_users 資料表與遷移機制
-- [x] 08-02: 重構 LineUserService 查詢 API
   5. 所有查詢使用新表作為單一真實來源（不再混合使用 user_meta）
 
 **Plans**: 2 plans in 2 waves
 
 Plans:
-- [ ] 08-01-PLAN.md — 建立 wp_buygo_line_users 資料表與資料遷移機制
-- [ ] 08-02-PLAN.md — 重構 LineUserService 查詢 API（五個核心方法）
+- [x] 08-01-PLAN.md — 建立 wp_buygo_line_users 資料表與資料遷移機制
+- [x] 08-02-PLAN.md — 重構 LineUserService 查詢 API（七個核心方法）
 
 ### Phase 9: 標準 WordPress URL 機制
 **Goal**: 實作標準 WordPress 登入入口,取代 REST API 架構
@@ -222,14 +216,15 @@ Plans:
 **Success Criteria** (what must be TRUE):
   1. `wp-login.php?loginSocial=buygo-line` 可正確啟動 LINE OAuth 流程（建立 State、導向 LINE）
   2. OAuth callback 使用相同 URL 接收,完成 code 換 token、token 換 profile 流程
-  3. 舊的 REST API endpoint (`/wp-json/buygo-line-notify/v1/login/*`) 已移除或標記為 deprecated
+  3. 舊的 REST API endpoint (`/wp-json/buygo-line-notify/v1/login/*`) 已標記為 deprecated
   4. NSLContinuePageRenderException 例外類別已建立,可正確被捕捉與處理
-  5. login_url 和 logout_url filter 已整合,LINE 登入按鈕正確附加 `?loginSocial=buygo-line`
+  5. Login_Handler 已整合到 Plugin,login_init hook 正確註冊
 
-**Plans**: TBD
+**Plans**: 2 plans in 2 waves
 
 Plans:
-- [ ] 09-01: [TBD during planning]
+- [ ] 09-01-PLAN.md — Login Handler 基礎架構（NSLContinuePageRenderException、Login_Handler、LoginService 更新）
+- [ ] 09-02-PLAN.md — 整合 Login_Handler 到 Plugin 並標記 REST API deprecated
 
 ### Phase 10: Register Flow Page 系統
 **Goal**: 實作 Register Flow Page 機制,讓 OAuth callback 後可在任意頁面顯示註冊表單
@@ -364,8 +359,8 @@ Plans:
 | 6. 通用通知系統 | 0/TBD | ⏸️ Deferred to v0.3 | - |
 | 7. 測試與文件（舊版） | 0/TBD | ⏸️ Deferred to v0.3 | - |
 | **v0.2 Milestone (Nextend 架構重構)** | | | |
-| 8. 資料表架構與查詢 API | 0/2 | 🔄 Planned | - |
-| 9. 標準 WordPress URL 機制 | 0/TBD | Not started | - |
+| 8. 資料表架構與查詢 API | 2/2 | ✅ Completed | 2026-01-29 |
+| 9. 標準 WordPress URL 機制 | 0/2 | 🔄 Planned | - |
 | 10. Register Flow Page 系統 | 0/TBD | Not started | - |
 | 11. 完整註冊/登入/綁定流程 | 0/TBD | Not started | - |
 | 12. Profile Sync 與 Avatar 整合 | 0/TBD | Not started | - |
