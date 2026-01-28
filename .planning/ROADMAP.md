@@ -200,10 +200,11 @@ Plans:
   4. 遷移狀態已記錄到 wp_options（buygo_line_migration_status），舊表保留未刪除
   5. 所有查詢使用新表作為單一真實來源（不再混合使用 user_meta）
 
-**Plans**: TBD
+**Plans**: 2 plans in 2 waves
 
 Plans:
-- [ ] 08-01: [TBD during planning]
+- [ ] 08-01-PLAN.md — 建立 wp_buygo_line_users 資料表與資料遷移機制
+- [ ] 08-02-PLAN.md — 重構 LineUserService 查詢 API（五個核心方法）
 
 ### Phase 9: 標準 WordPress URL 機制
 **Goal**: 實作標準 WordPress 登入入口,取代 REST API 架構
@@ -357,7 +358,7 @@ Plans:
 | 6. 通用通知系統 | 0/TBD | ⏸️ Deferred to v0.3 | - |
 | 7. 測試與文件（舊版） | 0/TBD | ⏸️ Deferred to v0.3 | - |
 | **v0.2 Milestone (Nextend 架構重構)** | | | |
-| 8. 資料表架構與查詢 API | 0/TBD | Not started | - |
+| 8. 資料表架構與查詢 API | 0/2 | 🔄 Planned | - |
 | 9. 標準 WordPress URL 機制 | 0/TBD | Not started | - |
 | 10. Register Flow Page 系統 | 0/TBD | Not started | - |
 | 11. 完整註冊/登入/綁定流程 | 0/TBD | Not started | - |
