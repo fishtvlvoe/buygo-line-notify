@@ -169,14 +169,18 @@ class LineUserService {
             'link_date'  => current_time('mysql'),
         ];
 
+        // 明確建立 format array，避免 count mismatch
+        $formats = ['%s', '%s', '%d', '%s']; // type, identifier, user_id, link_date
+
         if ($is_registration) {
             $insert_data['register_date'] = current_time('mysql');
+            $formats[] = '%s'; // register_date
         }
 
         $result = $wpdb->insert(
             $table_name,
             $insert_data,
-            ['%s', '%s', '%d', '%s', '%s']
+            $formats
         );
 
         return $result !== false;
