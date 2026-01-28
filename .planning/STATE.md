@@ -6,23 +6,23 @@ See: .planning/PROJECT.md (updated 2026-01-28)
 
 **Core value:** 讓任何 WordPress 網站都能輕鬆整合 LINE 功能，無需重複開發 LINE API 通訊邏輯，同時解決 LINE 內建瀏覽器的登入問題。
 
-**Current focus:** Phase 14 - buygo-line-notify Webhook 系統
+**Current focus:** Phase 15 - buygo-line-notify LINE Login 系統
 
 ## Current Position
 
-Phase: 14 of 23 (buygo-line-notify Webhook 系統)
-Plan: 03/03 完成（14-01, 14-02, 14-03 完成）
-Status: Phase 14 Wave 2 complete
-Last activity: 2026-01-29 — Completed 14-03-PLAN.md (Plugin 整合與背景處理)
+Phase: 15 of 23 (buygo-line-notify LINE Login 系統)
+Plan: 01/04 完成（15-01 完成）
+Status: Phase 15 in progress
+Last activity: 2026-01-28 — Completed 15-01-PLAN.md (StateManager + LoginService OAuth 核心)
 
-Progress: [████████████░░░░░░░░] 57% overall (13/23 phases from v1.0-v2.0, Phase 14 Wave 2 complete)
+Progress: [████████████░░░░░░░░] 57% overall (13/23 phases from v1.0-v2.0, Phase 15 Plan 01 complete)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 3 (Phase 14 Wave 2)
-- Average duration: 3 min
-- Total execution time: 9 min
+- Total plans completed: 4 (Phase 14 Wave 2 + Phase 15 Plan 01)
+- Average duration: 2.5 min
+- Total execution time: 10.5 min
 
 **By Milestone:**
 
@@ -30,7 +30,7 @@ Progress: [████████████░░░░░░░░] 57% ove
 |-----------|--------|-------|--------------|------------|
 | v1.0 測試驗證 | 6/6 | 14/14 | 36/36 | 2026-01-28 |
 | v2.0 全頁面遷移 | 7/7 | 21/21 | 26/26 | 2026-01-28 |
-| v3.0 新功能整合 | 0/10 | 3/TBD | 8/75 | In progress |
+| v3.0 新功能整合 | 0/10 | 4/TBD | 10/75 | In progress |
 
 **Phase 14 Summary (Wave 2 Complete):**
 - Webhook API endpoint: ✅ Created (/wp-json/buygo-line-notify/v1/webhook)
@@ -41,12 +41,21 @@ Progress: [████████████░░░░░░░░] 57% ove
 - Plugin integration: ✅ Hooks registered (rest_api_init, buygo_process_line_webhook)
 - LINE Console verified: ✅ Webhook URL test passed
 
+**Phase 15 Summary (Plan 01 Complete):**
+- StateManager: ✅ Created (三層儲存 fallback)
+- LoginService: ✅ Created (OAuth 2.0 完整流程)
+- State 管理: ✅ 一次性使用 + 防時序攻擊
+- Authorize URL: ✅ bot_prompt=aggressive 設定
+- Token exchange: ✅ code → access_token
+- Profile fetch: ✅ access_token → user profile
+
 **Recent Activity:**
+- 15-01 completed (2 tasks, 2 commits) - StateManager + LoginService
 - 14-01 completed (2 tasks, 2 commits) - Webhook endpoint + signature verification
 - 14-02 completed (1 task, 1 commit) - WebhookHandler + event deduplication
 - 14-03 completed (2 tasks, 2 commits) - Plugin integration + background processing
 
-*Updated: 2026-01-29 after Phase 14 Plan 03 completion*
+*Updated: 2026-01-28 after Phase 15 Plan 01 completion*
 
 ## Accumulated Context
 
@@ -76,6 +85,10 @@ Recent decisions affecting current work:
 - **14-03:** FastCGI 環境使用 fastcgi_finish_request 立即返回 200 後背景處理
 - **14-03:** 非 FastCGI 環境使用 wp_schedule_single_event 排程背景處理
 - **14-03:** 在 Plugin::onInit 註冊 rest_api_init 和 buygo_process_line_webhook hooks
+- **15-01 (STATE-01):** 三層儲存 fallback 處理 LINE 瀏覽器 Session 清除（Session → Transient → Option）
+- **15-01 (STATE-02):** State 有效期 10 分鐘（平衡安全性與使用者體驗）
+- **15-01 (STATE-03):** 使用 hash_equals 防時序攻擊（確保固定時間比對）
+- **15-01 (LOGIN-01):** bot_prompt=aggressive 強制引導加入官方帳號（確保可發送 Push Message）
 
 ### Pending Todos
 
@@ -87,7 +100,7 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-01-29 01:23
-Stopped at: Completed 14-03-PLAN.md (Plugin 整合與背景處理)
+Last session: 2026-01-28 18:06
+Stopped at: Completed 15-01-PLAN.md (StateManager + LoginService OAuth 核心)
 Resume file: None
-Resume: Phase 14 Wave 2 complete. Ready for Wave 3 (LIFF 系統) or Phase 15 (LINE Login 系統)
+Resume: Phase 15 Plan 01 complete. Ready for Plan 02 (UserService + 用戶建立/綁定)
