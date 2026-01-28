@@ -134,7 +134,14 @@ if (!defined('ABSPATH')) {
                         <label>測試登入</label>
                     </th>
                     <td>
-                        <a href="<?php echo esc_url(rest_url('buygo-line-notify/v1/login/authorize?redirect_url=' . urlencode(admin_url('admin.php?page=buygo-line-notify-settings')))); ?>"
+                        <?php
+                        $authorize_url = add_query_arg(
+                            'redirect_url',
+                            urlencode(admin_url('admin.php?page=buygo-line-notify-settings')),
+                            rest_url('buygo-line-notify/v1/login/authorize')
+                        );
+                        ?>
+                        <a href="<?php echo esc_url($authorize_url); ?>"
                            class="button">
                             使用 LINE 登入測試
                         </a>
