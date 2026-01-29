@@ -342,7 +342,12 @@ final class SettingsPage
             $user_id = (int) $row['user_id'];
             $user = \get_user_by('id', $user_id);
 
+            // 如果 WordPress 用戶不存在，直接刪除孤立的綁定記錄
             if (!$user) {
+                $wpdb->delete($bindings_table, ['user_id' => $user_id]);
+                \delete_option("buygo_line_sync_log_{$user_id}");
+                \delete_option("buygo_line_conflict_log_{$user_id}");
+                $deleted_count++;
                 continue;
             }
 
