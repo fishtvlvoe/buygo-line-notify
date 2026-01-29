@@ -37,10 +37,11 @@ class LoginButtonShortcode {
 		// 解析參數
 		$atts = \shortcode_atts(
 			[
-				'redirect_url'         => '',    // 登入後導向 URL
-				'button_text'          => '',    // 自訂按鈕文字
-				'button_class'         => '',    // 自訂 CSS class
-				'show_when_logged_in'  => 'no',  // yes/no - 已登入時是否顯示
+				'redirect_url'         => '',     // 登入後導向 URL
+				'button_text'          => '',     // 自訂按鈕文字
+				'button_class'         => '',     // 自訂 CSS class
+				'button_size'          => 'full', // small, medium, large, full
+				'show_when_logged_in'  => 'no',   // yes/no - 已登入時是否顯示
 			],
 			$atts,
 			'buygo_line_login'
@@ -100,6 +101,16 @@ class LoginButtonShortcode {
 
 		// 取得按鈕 CSS class
 		$button_class = 'buygo-line-login-btn';
+
+		// 加入尺寸 class
+		$button_size = \sanitize_html_class( $atts['button_size'] );
+		if ( in_array( $button_size, [ 'small', 'medium', 'large', 'full' ], true ) ) {
+			$button_class .= ' buygo-line-login-btn-' . $button_size;
+		} else {
+			$button_class .= ' buygo-line-login-btn-full'; // 預設全寬
+		}
+
+		// 加入自訂 class
 		if ( ! empty( $atts['button_class'] ) ) {
 			$button_class .= ' ' . \sanitize_html_class( $atts['button_class'] );
 		}
@@ -130,7 +141,6 @@ class LoginButtonShortcode {
 		<style>
 		/* 重用 LoginButtonService 的樣式 */
 		.buygo-line-login-btn {
-			width: 100% !important;
 			padding: 0 !important;
 			border: none !important;
 			border-radius: 4px !important;
@@ -180,6 +190,26 @@ class LoginButtonShortcode {
 			-moz-osx-font-smoothing: grayscale !important;
 			text-transform: none !important;
 			display: inline-block !important;
+		}
+
+		/* 按鈕尺寸變化 */
+		.buygo-line-login-btn-small {
+			width: auto !important;
+			min-width: 120px !important;
+			max-width: 200px !important;
+		}
+		.buygo-line-login-btn-medium {
+			width: auto !important;
+			min-width: 200px !important;
+			max-width: 300px !important;
+		}
+		.buygo-line-login-btn-large {
+			width: auto !important;
+			min-width: 300px !important;
+			max-width: 400px !important;
+		}
+		.buygo-line-login-btn-full {
+			width: 100% !important;
 		}
 		</style>
 

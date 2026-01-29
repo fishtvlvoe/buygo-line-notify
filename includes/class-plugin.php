@@ -57,6 +57,9 @@ final class Plugin
         // 註冊帳號頁面整合（我的帳號 - LINE 綁定狀態顯示）
         \BuygoLineNotify\Services\AccountIntegrationService::register_hooks();
 
+        // 註冊 FluentCart 客戶檔案整合
+        \BuygoLineNotify\Integrations\FluentCartCustomerProfileIntegration::register_hooks();
+
         // 註冊 LINE Login shortcodes
         $this->register_shortcodes();
 
@@ -150,6 +153,9 @@ final class Plugin
         include_once BuygoLineNotify_PLUGIN_DIR . 'includes/api/class-webhook-api.php';
         include_once BuygoLineNotify_PLUGIN_DIR . 'includes/api/class-login-api.php';
         include_once BuygoLineNotify_PLUGIN_DIR . 'includes/api/class-fluentcart-integration-api.php';
+
+        // 載入 Integration 類別
+        include_once BuygoLineNotify_PLUGIN_DIR . 'includes/integrations/class-fluentcart-customer-profile-integration.php';
 
         // 載入 Facade（供其他外掛使用）
         include_once BuygoLineNotify_PLUGIN_DIR . 'includes/class-buygo-line-notify.php';
