@@ -104,6 +104,12 @@ final class Plugin
         include_once BuygoLineNotify_PLUGIN_DIR . 'includes/services/class-line-messaging-service.php';
         include_once BuygoLineNotify_PLUGIN_DIR . 'includes/services/class-line-user-service.php';
 
+        // ProfileSyncService 依賴 SettingsService，必須在其之後載入
+        include_once BuygoLineNotify_PLUGIN_DIR . 'includes/services/class-profile-sync-service.php';
+
+        // AvatarService 依賴 LineUserService，必須在其之後載入
+        include_once BuygoLineNotify_PLUGIN_DIR . 'includes/services/class-avatar-service.php';
+
         // 載入 Webhook 相關服務
         include_once BuygoLineNotify_PLUGIN_DIR . 'includes/services/class-webhook-verifier.php';
         include_once BuygoLineNotify_PLUGIN_DIR . 'includes/services/class-webhook-handler.php';
