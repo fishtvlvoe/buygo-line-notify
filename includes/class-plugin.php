@@ -57,8 +57,11 @@ final class Plugin
         // 註冊帳號頁面整合（我的帳號 - LINE 綁定狀態顯示）
         \BuygoLineNotify\Services\AccountIntegrationService::register_hooks();
 
-        // 註冊 FluentCart 客戶檔案整合（暫時禁用以排查問題）
-        // \BuygoLineNotify\Integrations\FluentCartCustomerProfileIntegration::register_hooks();
+        // 註冊 FluentCart 客戶檔案整合
+        \BuygoLineNotify\Integrations\FluentCartCustomerProfileIntegration::register_hooks();
+
+        // 初始化後台管理功能
+        $this->initAdminFeatures();
 
         // 註冊 LINE Login shortcodes
         $this->register_shortcodes();
@@ -131,6 +134,9 @@ final class Plugin
         include_once BuygoLineNotify_PLUGIN_DIR . 'includes/services/class-line-messaging-service.php';
         include_once BuygoLineNotify_PLUGIN_DIR . 'includes/services/class-line-user-service.php';
 
+        // MessagingService (Facade API) 依賴 LineUserService，必須在其之後載入
+        include_once BuygoLineNotify_PLUGIN_DIR . 'includes/services/class-messaging-service.php';
+
         // ProfileSyncService 依賴 SettingsService，必須在其之後載入
         include_once BuygoLineNotify_PLUGIN_DIR . 'includes/services/class-profile-sync-service.php';
 
@@ -171,7 +177,21 @@ final class Plugin
 
         if (\is_admin()) {
             include_once BuygoLineNotify_PLUGIN_DIR . 'includes/admin/class-settings-page.php';
+            include_once BuygoLineNotify_PLUGIN_DIR . 'includes/admin/class-user-list-column.php';
         }
+    }
+
+    /**
+     * 初始化後台管理功能
+     */
+    private function initAdminFeatures(): void
+    {
+        if (!\is_admin()) {
+            return;
+        }
+
+        // 初始化用戶列表 LINE 綁定欄位
+        \BuygoLineNotify\Admin\UserListColumn::init();
     }
 }
 
