@@ -52,9 +52,6 @@ Decimal phases appear between their surrounding integers in numeric order.
 **Plans**: 4 plans in 3 waves
 
 Plans:
-- [x] 10-01-PLAN.md — 核心 Shortcode + Transient 儲存（RegisterFlowShortcode、Login_Handler 擴展）
-- [x] 10-02-PLAN.md — 表單提交處理（handle_register_submission、Auto-link 機制）
-- [x] 10-03-PLAN.md — 後台設定 + 驗證（Register Flow Page 選擇器、流程驗證 checkpoint）
 - [x] 01-01-PLAN.md — 建立資料庫結構與 LINE 用戶綁定 API（混合儲存策略）
 - [x] 01-02-PLAN.md — 實作設定加解密服務與向後相容讀取
 - [x] 01-03-PLAN.md — 條件式後台選單整合（根據父外掛動態掛載）
@@ -77,9 +74,6 @@ Plans:
 **Plans**: 2 plans in 2 waves
 
 Plans:
-- [x] 10-01-PLAN.md — 核心 Shortcode + Transient 儲存（RegisterFlowShortcode、Login_Handler 擴展）
-- [x] 10-02-PLAN.md — 表單提交處理（handle_register_submission、Auto-link 機制）
-- [x] 10-03-PLAN.md — 後台設定 + 驗證（Register Flow Page 選擇器、流程驗證 checkpoint）
 - [x] 02-01-PLAN.md — 建立 Webhook REST API Endpoint 和事件處理器（簽名驗證、去重、Hooks）
 - [x] 02-02-PLAN.md — 整合到外掛主流程並進行 LINE Console 驗證（含 checkpoint）
 
@@ -99,13 +93,7 @@ Plans:
   4. Cookie 設定為 SameSite=Lax,支援 LINE 瀏覽器的 OAuth 回調
   5. 用戶完成 LINE Login 後會被引導加入 LINE 官方帳號（bot_prompt=aggressive）
 
-**Plans**: TBD
-
-Plans:
-- [x] 10-01-PLAN.md — 核心 Shortcode + Transient 儲存（RegisterFlowShortcode、Login_Handler 擴展）
-- [x] 10-02-PLAN.md — 表單提交處理（handle_register_submission、Auto-link 機制）
-- [x] 10-03-PLAN.md — 後台設定 + 驗證（Register Flow Page 選擇器、流程驗證 checkpoint）
-- [ ] 03-01: [TBD during planning]
+**Plans**: Deprecated
 
 ### Phase 4: LIFF 整合 (延後到 v0.3)
 **Goal**: 在 LINE 內建瀏覽器中提供無縫的登入體驗
@@ -123,13 +111,7 @@ Plans:
   4. WordPress Auth Cookie 在 LINE 環境中正常運作（用戶保持登入狀態）
   5. 登入完成後用戶會被導回原始頁面（保留 returnUrl 參數）
 
-**Plans**: TBD
-
-Plans:
-- [x] 10-01-PLAN.md — 核心 Shortcode + Transient 儲存（RegisterFlowShortcode、Login_Handler 擴展）
-- [x] 10-02-PLAN.md — 表單提交處理（handle_register_submission、Auto-link 機制）
-- [x] 10-03-PLAN.md — 後台設定 + 驗證（Register Flow Page 選擇器、流程驗證 checkpoint）
-- [ ] 04-01: [TBD during planning]
+**Plans**: Deferred
 
 ### Phase 5: 前台整合 (v0.1 - 已廢棄)
 **Goal**: 在 WordPress 前台各處提供 LINE 登入和綁定入口
@@ -147,13 +129,7 @@ Plans:
   4. 任何頁面或文章可使用 `[buygo_line_login]` Shortcode 顯示 LINE 登入按鈕
   5. 按鈕樣式可透過 Shortcode 屬性自訂（顏色、大小、文字）
 
-**Plans**: TBD
-
-Plans:
-- [x] 10-01-PLAN.md — 核心 Shortcode + Transient 儲存（RegisterFlowShortcode、Login_Handler 擴展）
-- [x] 10-02-PLAN.md — 表單提交處理（handle_register_submission、Auto-link 機制）
-- [x] 10-03-PLAN.md — 後台設定 + 驗證（Register Flow Page 選擇器、流程驗證 checkpoint）
-- [ ] 05-01: [TBD during planning]
+**Plans**: Deprecated
 
 ### Phase 6: 通用通知系統 (延後到 v0.3)
 **Goal**: 提供通用 API 讓其他外掛可發送 LINE 通知
@@ -171,13 +147,7 @@ Plans:
   4. FluentCart 訂單狀態變更時會自動發送 LINE 通知給買家（透過 Hook 整合）
   5. 其他外掛可透過 Hooks（如 `buygo_line_notify/notification/send`）註冊自訂的通知觸發器
 
-**Plans**: TBD
-
-Plans:
-- [x] 10-01-PLAN.md — 核心 Shortcode + Transient 儲存（RegisterFlowShortcode、Login_Handler 擴展）
-- [x] 10-02-PLAN.md — 表單提交處理（handle_register_submission、Auto-link 機制）
-- [x] 10-03-PLAN.md — 後台設定 + 驗證（Register Flow Page 選擇器、流程驗證 checkpoint）
-- [ ] 06-01: [TBD during planning]
+**Plans**: Deferred
 
 ### Phase 7: 測試與文件 (v0.1 - 延後到 v0.3)
 **Goal**: 確保程式碼品質並提供完整的使用文件
@@ -195,13 +165,7 @@ Plans:
   4. 使用文件（DOC-01）清楚說明如何設定外掛、如何在 LINE Developers Console 設定 Webhook URL 和 Redirect URI
   5. API 文件（DOC-02）列出所有 Facade 方法、可用的 Hooks 列表、以及範例程式碼
 
-**Plans**: TBD
-
-Plans:
-- [x] 10-01-PLAN.md — 核心 Shortcode + Transient 儲存（RegisterFlowShortcode、Login_Handler 擴展）
-- [x] 10-02-PLAN.md — 表單提交處理（handle_register_submission、Auto-link 機制）
-- [x] 10-03-PLAN.md — 後台設定 + 驗證（Register Flow Page 選擇器、流程驗證 checkpoint）
-- [ ] 07-01: [TBD during planning]
+**Plans**: Deferred
 
 ---
 
@@ -224,9 +188,6 @@ Plans:
 **Plans**: 2 plans in 2 waves
 
 Plans:
-- [x] 10-01-PLAN.md — 核心 Shortcode + Transient 儲存（RegisterFlowShortcode、Login_Handler 擴展）
-- [x] 10-02-PLAN.md — 表單提交處理（handle_register_submission、Auto-link 機制）
-- [x] 10-03-PLAN.md — 後台設定 + 驗證（Register Flow Page 選擇器、流程驗證 checkpoint）
 - [x] 08-01-PLAN.md — 建立 wp_buygo_line_users 資料表與資料遷移機制
 - [x] 08-02-PLAN.md — 重構 LineUserService 查詢 API（七個核心方法）
 
@@ -247,9 +208,6 @@ Plans:
 **Plans**: 3 plans in 2 waves
 
 Plans:
-- [x] 10-01-PLAN.md — 核心 Shortcode + Transient 儲存（RegisterFlowShortcode、Login_Handler 擴展）
-- [x] 10-02-PLAN.md — 表單提交處理（handle_register_submission、Auto-link 機制）
-- [x] 10-03-PLAN.md — 後台設定 + 驗證（Register Flow Page 選擇器、流程驗證 checkpoint）
 - [x] 09-01-PLAN.md — Login Handler 基礎架構（NSLContinuePageRenderException、Login_Handler、LoginService 更新）
 - [x] 09-02-PLAN.md — 整合 Login_Handler 到 Plugin 並標記 REST API deprecated
 - [x] 09-03-PLAN.md — URL Filter Service（login_url/logout_url filters）
@@ -274,9 +232,6 @@ Plans:
 - [x] 10-01-PLAN.md — 核心 Shortcode + Transient 儲存（RegisterFlowShortcode、Login_Handler 擴展）
 - [x] 10-02-PLAN.md — 表單提交處理（handle_register_submission、Auto-link 機制）
 - [x] 10-03-PLAN.md — 後台設定 + 驗證（Register Flow Page 選擇器、流程驗證 checkpoint）
-- [ ] 10-01-PLAN.md — 核心 Shortcode + Transient 儲存（RegisterFlowShortcode、Login_Handler 擴展）
-- [ ] 10-02-PLAN.md — 表單提交處理（handle_register_submission、Auto-link 機制）
-- [ ] 10-03-PLAN.md — 後台設定 + 驗證（Register Flow Page 選擇器、流程驗證 checkpoint）
 
 ### Phase 11: 完整註冊/登入/綁定流程
 **Goal**: 實作完整的新用戶註冊、Auto-link、已登入綁定、登入流程
@@ -292,13 +247,11 @@ Plans:
   4. 已註冊用戶可透過 LINE Login 直接登入（識別 identifier,讀取 user_id,自動登入）
   5. State 驗證機制運作正常（32 字元隨機、hash_equals、10 分鐘有效期、三層儲存）
 
-**Plans**: TBD
+**Plans**: 2 plans in 2 waves
 
 Plans:
-- [x] 10-01-PLAN.md — 核心 Shortcode + Transient 儲存（RegisterFlowShortcode、Login_Handler 擴展）
-- [x] 10-02-PLAN.md — 表單提交處理（handle_register_submission、Auto-link 機制）
-- [x] 10-03-PLAN.md — 後台設定 + 驗證（Register Flow Page 選擇器、流程驗證 checkpoint）
-- [ ] 11-01: [TBD during planning]
+- [ ] 11-01-PLAN.md — handle_link_submission() + handle_callback() 綁定流程判斷
+- [ ] 11-02-PLAN.md — 流程驗證 checkpoint（四個流程場景測試）
 
 ### Phase 12: Profile Sync 與 Avatar 整合
 **Goal**: 實作 Profile 同步機制與 Avatar 整合
@@ -317,9 +270,6 @@ Plans:
 **Plans**: TBD
 
 Plans:
-- [x] 10-01-PLAN.md — 核心 Shortcode + Transient 儲存（RegisterFlowShortcode、Login_Handler 擴展）
-- [x] 10-02-PLAN.md — 表單提交處理（handle_register_submission、Auto-link 機制）
-- [x] 10-03-PLAN.md — 後台設定 + 驗證（Register Flow Page 選擇器、流程驗證 checkpoint）
 - [ ] 12-01: [TBD during planning]
 
 ### Phase 13: 前台整合
@@ -339,9 +289,6 @@ Plans:
 **Plans**: TBD
 
 Plans:
-- [x] 10-01-PLAN.md — 核心 Shortcode + Transient 儲存（RegisterFlowShortcode、Login_Handler 擴展）
-- [x] 10-02-PLAN.md — 表單提交處理（handle_register_submission、Auto-link 機制）
-- [x] 10-03-PLAN.md — 後台設定 + 驗證（Register Flow Page 選擇器、流程驗證 checkpoint）
 - [ ] 13-01: [TBD during planning]
 
 ### Phase 14: 後台管理
@@ -361,9 +308,6 @@ Plans:
 **Plans**: TBD
 
 Plans:
-- [x] 10-01-PLAN.md — 核心 Shortcode + Transient 儲存（RegisterFlowShortcode、Login_Handler 擴展）
-- [x] 10-02-PLAN.md — 表單提交處理（handle_register_submission、Auto-link 機制）
-- [x] 10-03-PLAN.md — 後台設定 + 驗證（Register Flow Page 選擇器、流程驗證 checkpoint）
 - [ ] 14-01: [TBD during planning]
 
 ### Phase 15: 測試與文件
@@ -383,9 +327,6 @@ Plans:
 **Plans**: TBD
 
 Plans:
-- [x] 10-01-PLAN.md — 核心 Shortcode + Transient 儲存（RegisterFlowShortcode、Login_Handler 擴展）
-- [x] 10-02-PLAN.md — 表單提交處理（handle_register_submission、Auto-link 機制）
-- [x] 10-03-PLAN.md — 後台設定 + 驗證（Register Flow Page 選擇器、流程驗證 checkpoint）
 - [ ] 15-01: [TBD during planning]
 
 ---
@@ -399,18 +340,18 @@ Plans:
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | **v0.1 Milestone** | | | |
-| 1. 基礎設施與設定 | 4/4 | ✅ Completed | 2026-01-28 |
-| 2. Webhook 系統 | 2/2 | ✅ Completed | 2026-01-28 |
-| 3. LINE Login（舊版） | 0/TBD | 🚫 Deprecated | - |
-| 4. LIFF 整合 | 0/TBD | ⏸️ Deferred to v0.3 | - |
-| 5. 前台整合（舊版） | 0/TBD | 🚫 Deprecated | - |
-| 6. 通用通知系統 | 0/TBD | ⏸️ Deferred to v0.3 | - |
-| 7. 測試與文件（舊版） | 0/TBD | ⏸️ Deferred to v0.3 | - |
+| 1. 基礎設施與設定 | 4/4 | Completed | 2026-01-28 |
+| 2. Webhook 系統 | 2/2 | Completed | 2026-01-28 |
+| 3. LINE Login（舊版） | 0/TBD | Deprecated | - |
+| 4. LIFF 整合 | 0/TBD | Deferred to v0.3 | - |
+| 5. 前台整合（舊版） | 0/TBD | Deprecated | - |
+| 6. 通用通知系統 | 0/TBD | Deferred to v0.3 | - |
+| 7. 測試與文件（舊版） | 0/TBD | Deferred to v0.3 | - |
 | **v0.2 Milestone (Nextend 架構重構)** | | | |
-| 8. 資料表架構與查詢 API | 2/2 | ✅ Completed | 2026-01-29 |
-| 9. 標準 WordPress URL 機制 | 3/3 | ✅ Completed | 2026-01-29 |
-| 10. Register Flow Page 系統 | 3/3 | ✅ Completed | 2026-01-29 |
-| 11. 完整註冊/登入/綁定流程 | 0/TBD | Not started | - |
+| 8. 資料表架構與查詢 API | 2/2 | Completed | 2026-01-29 |
+| 9. 標準 WordPress URL 機制 | 3/3 | Completed | 2026-01-29 |
+| 10. Register Flow Page 系統 | 3/3 | Completed | 2026-01-29 |
+| 11. 完整註冊/登入/綁定流程 | 0/2 | Planning complete | - |
 | 12. Profile Sync 與 Avatar 整合 | 0/TBD | Not started | - |
 | 13. 前台整合 | 0/TBD | Not started | - |
 | 14. 後台管理 | 0/TBD | Not started | - |
