@@ -11,7 +11,7 @@
  */
 
 // 載入 WordPress
-require_once dirname( __FILE__, 5 ) . '/wp-load.php';
+require_once dirname( __FILE__, 4 ) . '/wp-load.php';
 
 // 確保已登入
 if ( ! is_user_logged_in() ) {
