@@ -1,5 +1,82 @@
 # Changelog
 
+## 2026-01-29 (Session 3)
+
+### 功能 (feat)
+
+#### Phase 12: Profile Sync 與 Avatar 整合
+
+**Wave 1 - 核心服務建立**：
+
+1. **ProfileSyncService (Plan 12-01)**
+   - 實作 LINE profile 同步到 WordPress 用戶的核心邏輯
+   - 支援三種觸發場景：register（強制同步）、login（可選）、link（可選）
+   - 實作三種衝突處理策略：
+     - `line_priority` - LINE profile 優先覆蓋
+     - `wordpress_priority` - 保留 WordPress 現有資料（空白欄位除外）
+     - `manual` - 記錄衝突但不自動更新
+   - 同步日誌記錄（最多保留 10 筆）
+   - 衝突日誌記錄（manual 策略使用）
+
+2. **AvatarService (Plan 12-02)**
+   - 整合 WordPress `get_avatar_url` filter hook
+   - 已綁定 LINE 的用戶顯示 LINE 頭像
+   - 7 天頭像快取機制（避免阻塞頁面）
+   - 支援多種參數類型（ID、email、WP_User、WP_Comment、WP_Post）
+
+**Wave 2 - 流程整合與後台 UI**：
+
+3. **ProfileSyncService 整合 (Plan 12-03)**
+   - `UserService::create_user_from_line()` - 註冊時呼叫 syncProfile('register')
+   - `Login_Handler::perform_login()` - 登入時呼叫 syncProfile('login')
+   - `Login_Handler::handle_link_submission()` - 綁定時呼叫 syncProfile('link')
+
+4. **Profile Sync 後台設定 UI (Plan 12-04)**
+   - sync_on_login checkbox - 控制登入時是否同步
+   - conflict_strategy radio buttons - 選擇衝突處理策略
+   - 清除頭像快取按鈕 - AJAX 清除所有用戶快取
+   - 表單驗證和儲存邏輯
+
+**Wave 3 - 整合驗證**（進行中）：
+
+5. **Plan 12-05** - 人工驗證三種衝突策略運作
+
+**變更檔案**：
+- `includes/services/class-profile-sync-service.php` - 新增（304 行）
+- `includes/services/class-avatar-service.php` - 新增（150 行）
+- `includes/services/class-settings-service.php` - 擴展支援 sync_on_login 和 conflict_strategy
+- `includes/services/class-user-service.php` - 整合 ProfileSyncService
+- `includes/handlers/class-login-handler.php` - 整合 ProfileSyncService
+- `includes/admin/views/settings-page.php` - 新增 Profile Sync 設定區塊
+- `includes/admin/class-settings-page.php` - 新增 AJAX handler
+- `includes/class-plugin.php` - 載入 ProfileSyncService 和 AvatarService
+
+**相依需求**：
+- SYNC-01: 註冊時同步 Profile ✅
+- SYNC-02: 登入時可選同步 ✅
+- SYNC-03: 綁定時可選同步 ✅
+- SYNC-04: 衝突處理策略 ✅（驗證中）
+- SYNC-05: 同步日誌記錄 ✅
+- AVATAR-01: get_avatar_url filter hook ✅
+- AVATAR-02: 頭像快取機制 ✅
+- AVATAR-03: 快取清除功能 ✅
+
+**Commits**（Wave 1-2）：
+- `ed7d0bc` - feat(12-01): extend SettingsService and create ProfileSyncService
+- `39dfcce` - feat(12-01): load ProfileSyncService in Plugin with correct order
+- `df19c6c` - docs(12-01): complete ProfileSyncService 核心服務類別 plan
+- `3143a4c` - feat(12-02): 建立 AvatarService 類別
+- `932eef5` - feat(12-02): 整合 AvatarService 到 Plugin
+- `a0d8391` - docs(12-02): complete AvatarService 實作 + get_avatar_url filter hook plan
+- `f672490` - feat(12-03): integrate ProfileSyncService into UserService
+- `7718a44` - feat(12-03): integrate ProfileSyncService into Login_Handler
+- `9f402b7` - docs(12-03): complete ProfileSyncService 整合到 UserService 和 Login_Handler plan
+- `7e7b458` - feat(12-04): add Profile Sync settings UI to admin page
+- `223bf5b` - feat(12-04): add AJAX handler for clearing avatar cache
+- `67b8efe` - docs(12-04): complete Profile Sync 後台設定 UI plan
+
+---
+
 ## 2026-01-29 (Session 2)
 
 ### 安全性 (security)

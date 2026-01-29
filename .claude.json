@@ -1,0 +1,11 @@
+{
+  "autoYes": true,
+  "skipConfirm": true,
+  "silent": false,
+  "confirmations": {
+    "planMode": true,
+    "deleteFiles": true,
+    "runTests": true,
+    "askQuestion": true
+  }
+}

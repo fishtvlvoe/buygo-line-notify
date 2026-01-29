@@ -1,6 +1,22 @@
 vendor/
-
 coverage/
-
 .phpunit.result.cache
 
+# 測試和除錯用腳本（開發時使用，不納入版本控制）
+check-*.php
+test-*.php
+debug-*.php
+init-db-test.php
+
+# IDE 和編輯器
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# macOS
+.DS_Store
+
+# WordPress 相關
+wp-config-local.php
