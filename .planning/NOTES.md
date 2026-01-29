@@ -101,10 +101,131 @@ Shortcode 只在 `Login_Handler::register_shortcode_dynamically()` 中註冊（�
 
 **測試狀態：**
 - [ ] 案例 1：後台設定頁面 - **待測試**
-- [ ] 案例 2：新用戶註冊流程（Register Flow Page） - **待重測**（修正 shortcode 問題後）
+- [x] 案例 2：新用戶註冊流程（Register Flow Page） - **✅ 通過**（用戶已完成註冊）
 - [ ] 案例 3：新用戶註冊流程（Fallback 模式） - **待測試**
 - [ ] 案例 4：Auto-link（Email 已存在） - **待測試**
 
-**下一步：**
-請重新測試案例 2，應該會看到完整的註冊表單了！
+---
+
+## 用戶問題與決策（2026-01-29 晚間）
+
+### 問題 3: 註冊成功但 UI 風格不一致
+
+**現象：**
+- 用戶成功完成註冊流程
+- 但表單 UI 設計與 BuyGo Plus One 風格不一致
+
+**決策：**
+- 用戶表示此項目**非緊急**，可以之後再做
+- 需記得：未來要統一 UI 風格（Phase 13 前台整合時處理）
+
+### 問題 4: 登入後跳轉頁面設定
+
+**用戶疑問：**
+1. 登入後應該跳轉到指定頁面，如何設定？
+2. 是在後台設定嗎？
+3. 是否由其他外掛控制？
+4. 是否會採用其他系統的跳轉規則？
+5. 目前都直接導向首頁
+
+**技術說明：**
+
+**redirect_url 來源機制：**
+1. 從 LINE 登入按鈕點擊時取得（`wp_get_referer()`）
+2. 儲存在 state 中（`StateManager::store_state()`）
+3. 完成登入後取回使用
+
+**WordPress 標準機制：**
+```php
+// 程式碼已實作 (Login_Handler:345, 628, 730)
+$redirect_to = $state_data['redirect_url'] ?? home_url();
+$redirect_to = apply_filters('login_redirect', $redirect_to, '', $user);
+```
+
+**login_redirect filter 會自動：**
+- ✅ 尊重其他外掛的跳轉規則（WooCommerce, BuddyPress 等）
+- ✅ 尊重 WordPress 核心的跳轉邏輯
+- ✅ 允許主題自訂跳轉行為
+
+**決策：**
+- Phase 10 範圍：Register Flow Page 系統（新用戶註冊）
+- Phase 11 範圍：完整註冊/登入/綁定流程（包含現有用戶登入）
+- Phase 13 範圍：前台整合（包含登入按鈕、跳轉邏輯、後台跳轉設定）
+- **Phase 10 維持現狀**，不新增後台跳轉設定
+- **Phase 13 時再實作**後台設定選項和完整跳轉優先級邏輯
+
+**測試時的解法：**
+- 方法 1：在前台頁面測試（推薦）- 會自動回到該頁面
+- 方法 2：手動指定 redirect_url 參數（測試用）
+
+---
+
+## Phase 10-03 Task 2 Checkpoint 驗證
+
+**目前進度：**
+- ✅ Task 1 完成：後台設定頁面整合
+- ✅ Task 2 完成：用戶驗證測試全部通過
+
+**最終測試結果：**
+1. ✅ 後台設定頁面（快速建立頁面功能）- **通過**（AJAX 功能正常，黃色警告不影響使用）
+2. ✅ 新用戶註冊流程（Register Flow Page）- **通過**
+3. ✅ 新用戶註冊流程（Fallback 模式）- **通過**
+4. ✅ Auto-link（Email 已存在）- **通過**
+
+**測試結果分析：**
+
+### 案例 1：快速建立頁面
+- ✅ AJAX 功能正常
+- ✅ 頁面建立成功
+- ⚠️ 黃色警告為非阻擋性提醒，不影響核心功能
+
+### 案例 2：Register Flow Page
+- ✅ Shortcode 正確渲染
+- ✅ 表單功能正常
+- ✅ 註冊成功
+
+### 案例 3：Fallback 模式
+- ✅ wp-login.php 表單正確顯示
+- ✅ 註冊流程完整
+- ✅ 成功建立帳號並登入
+- **測試過程遇到的問題：**
+  - 問題：刪除 WordPress 帳號後，LINE 綁定記錄未同步刪除
+  - 原因：wp_buygo_line_users 資料表中仍存在綁定記錄
+  - 解決：執行 `TRUNCATE TABLE wp_buygo_line_users` 清空資料表
+  - 未來改進：可在刪除 WordPress 用戶時自動清除對應的 LINE 綁定記錄
+
+### 案例 4：Auto-link
+- ✅ 成功偵測 Email 已存在
+- ✅ 自動綁定 LINE UID 到現有帳號
+- ✅ 直接登入（未顯示註冊表單）
+
+---
+
+## Phase 10 完成總結（2026-01-29）
+
+**執行狀態：✅ Phase 10 完全完成**
+
+- Plan 10-01: ✅ Complete
+- Plan 10-02: ✅ Complete
+- Plan 10-03: ✅ Complete
+
+**所有測試案例通過：**
+- 後台設定頁面 ✅
+- Register Flow Page 註冊流程 ✅
+- Fallback 模式註冊流程 ✅
+- Auto-link 自動綁定 ✅
+
+**Phase 10 功能清單：**
+1. ✅ RegisterFlowShortcode 實作
+2. ✅ Transient 儲存與讀取機制
+3. ✅ 表單提交處理與驗證
+4. ✅ Auto-link 自動綁定邏輯
+5. ✅ 後台設定頁面整合
+6. ✅ AJAX 快速建立頁面功能
+7. ✅ Fallback 模式支援
+
+**未來改進建議：**
+1. UI 風格統一（Phase 13 前台整合時處理）
+2. 登入後跳轉頁面後台設定（Phase 13）
+3. 刪除 WordPress 用戶時自動清除 LINE 綁定記錄（資料一致性）
 
