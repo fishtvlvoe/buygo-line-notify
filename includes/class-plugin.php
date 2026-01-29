@@ -51,6 +51,9 @@ final class Plugin
         // 註冊 URL Filter Service（login_url / logout_url filters）
         \BuygoLineNotify\Services\UrlFilterService::register_hooks();
 
+        // 初始化 Avatar Service（get_avatar_url filter hook）
+        \BuygoLineNotify\Services\AvatarService::init();
+
         // 註冊 LINE Login shortcodes
         $this->register_shortcodes();
 
