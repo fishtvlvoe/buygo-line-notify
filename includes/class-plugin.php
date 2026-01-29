@@ -57,8 +57,8 @@ final class Plugin
         // 註冊帳號頁面整合（我的帳號 - LINE 綁定狀態顯示）
         \BuygoLineNotify\Services\AccountIntegrationService::register_hooks();
 
-        // 註冊 FluentCart 客戶檔案整合
-        \BuygoLineNotify\Integrations\FluentCartCustomerProfileIntegration::register_hooks();
+        // 註冊 FluentCart 客戶檔案整合（暫時禁用以排查問題）
+        // \BuygoLineNotify\Integrations\FluentCartCustomerProfileIntegration::register_hooks();
 
         // 註冊 LINE Login shortcodes
         $this->register_shortcodes();
@@ -114,6 +114,12 @@ final class Plugin
             include_once BuygoLineNotify_PLUGIN_DIR . 'includes/shortcodes/class-login-button-shortcode.php';
         }
         \BuygoLineNotify\Shortcodes\LoginButtonShortcode::register();
+
+        // 註冊 [buygo_line_binding] shortcode
+        if (!\class_exists('BuygoLineNotify\Shortcodes\LineBindingShortcode')) {
+            include_once BuygoLineNotify_PLUGIN_DIR . 'includes/shortcodes/class-line-binding-shortcode.php';
+        }
+        \BuygoLineNotify\Shortcodes\LineBindingShortcode::register();
     }
 
     private function loadDependencies(): void
