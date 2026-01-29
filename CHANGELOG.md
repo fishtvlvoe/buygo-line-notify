@@ -1,5 +1,70 @@
 # Changelog
 
+## 2026-01-29 (Session 5)
+
+### 功能 (feat)
+
+#### Phase 13: 前台整合
+
+**Wave 1: 綁定狀態顯示與解除綁定**
+
+**Plan 13-01: LINE 綁定狀態顯示元件**
+- 建立 `AccountIntegrationService` 統一管理前台綁定狀態 UI
+- 整合 WooCommerce 我的帳號頁面（hook: `woocommerce_account_dashboard`）
+- 整合 WordPress 後台個人資料頁面（hooks: `show_user_profile`, `edit_user_profile`）
+- 未綁定狀態：顯示「綁定 LINE 帳號」按鈕
+- 已綁定狀態：顯示 LINE 頭像、名稱、UID、綁定日期、「解除綁定」按鈕
+- LINE 官方綠色主題 + 響應式設計
+
+**Plan 13-02: 解除綁定功能實作**
+- 新增 AJAX handler: `wp_ajax_buygo_line_unbind`
+- Nonce 驗證 + 權限檢查（一般用戶只能解除自己的綁定）
+- 呼叫 `LineUserService::unlinkUser()` 刪除綁定記錄
+- 清除 user_meta（avatar_url, avatar_updated）
+- 刪除 Profile Sync 日誌
+- 日誌記錄解除綁定操作
+
+**Wave 2: 登入 Shortcode**
+
+**Plan 13-03: [buygo_line_login] Shortcode**
+- 建立 `LoginButtonShortcode` 提供 `[buygo_line_login]` shortcode
+- 支援參數：
+  - `redirect_url` - 登入後導向 URL
+  - `button_text` - 自訂按鈕文字
+  - `button_class` - 自訂 CSS class
+  - `show_when_logged_in` - 已登入時是否顯示
+- 重用 `LoginButtonService` 樣式確保一致性
+- 已登入時顯示「您已登入」訊息（可選）
+
+**Wave 3: 驗證與文件**
+
+**Plan 13-04: 整合驗證與樣式優化**
+- 建立詳細驗證檢查清單（35+ 測試項目）
+- 建立 Phase 13 總結文件
+- 測試覆蓋：登入按鈕顯示、綁定狀態顯示、功能測試、樣式一致性
+
+**Commits**:
+- `df64578` - feat(13-01): create AccountIntegrationService for binding status display
+- `a19947d` - feat(13-02): implement LINE unbind AJAX handler
+- `8e37df8` - feat(13-03): implement [buygo_line_login] shortcode
+- `e2a9b38` - docs(13-04): complete Phase 13 verification and summary
+
+**變更檔案**:
+- 新增：`includes/services/class-account-integration-service.php` (457 行)
+- 新增：`includes/shortcodes/class-login-button-shortcode.php` (273 行)
+- 修改：`includes/admin/class-settings-page.php` (+58 行)
+- 修改：`includes/class-plugin.php` (+6 行)
+- 文件：`.planning/phases/13-前台整合/` (6 個檔案)
+
+**滿足需求**:
+- ✅ FRONTEND-01: 前台登入整合
+- ✅ FRONTEND-02: 我的帳號頁面綁定按鈕
+- ✅ FRONTEND-03: [buygo_line_login] Shortcode
+- ✅ FRONTEND-04: 前台整合驗證
+- ✅ FRONTEND-05: 解除綁定功能
+
+---
+
 ## 2026-01-29 (Session 4)
 
 ### 修復 (fix)
