@@ -134,6 +134,7 @@ final class SettingsPage
             'liff_endpoint_url',
             'login_button_position',
             'login_button_text',
+            'default_redirect_url',  // 預設登入後跳轉 URL
         ];
 
         foreach ($fields as $field) {

@@ -421,9 +421,39 @@ class Login_Handler {
 			)
 		);
 
-		// 取得導向 URL（使用 WordPress login_redirect filter）
-		$redirect_to = $state_data['redirect_url'] ?? home_url();
-		$redirect_to = apply_filters( 'login_redirect', $redirect_to, '', get_user_by( 'id', $user_id ) );
+		// 取得導向 URL
+		$user = get_user_by( 'id', $user_id );
+
+		// 1. 優先使用後台設定的「預設登入後跳轉 URL」
+		$default_redirect = Services\SettingsService::get_default_redirect_url();
+		if ( ! empty( $default_redirect ) ) {
+			$redirect_to = $default_redirect;
+		} else {
+			// 2. 使用 state_data 中的 redirect_url（OAuth 開始時的頁面）
+			$redirect_to = $state_data['redirect_url'] ?? home_url();
+
+			// 3. 檢查用戶是否有權限訪問 redirect_url
+			// 如果是 wp-admin 頁面且用戶不是管理員，導向到首頁
+			if ( strpos( $redirect_to, '/wp-admin/' ) !== false && strpos( $redirect_to, '/wp-admin/profile.php' ) === false ) {
+				// 這是後台頁面（但不是個人資料頁）
+				if ( ! user_can( $user_id, 'edit_posts' ) ) {
+					// 用戶沒有後台編輯權限（subscriber/customer），導向到首頁
+					$redirect_to = home_url();
+					Logger::get_instance()->log(
+						'info',
+						array(
+							'message'      => 'Redirect adjusted: user has no admin access',
+							'user_id'      => $user_id,
+							'original_url' => $state_data['redirect_url'] ?? '',
+							'adjusted_url' => $redirect_to,
+						)
+					);
+				}
+			}
+		}
+
+		// 4. 套用 WordPress login_redirect filter（允許其他外掛修改導向）
+		$redirect_to = apply_filters( 'login_redirect', $redirect_to, '', $user );
 
 		// 導向
 		wp_redirect( $redirect_to );

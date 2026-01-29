@@ -243,4 +243,14 @@ class SettingsService
         $valid = ['line_priority', 'wordpress_priority', 'manual'];
         return in_array($strategy, $valid, true) ? $strategy : 'line_priority';
     }
+
+    /**
+     * 取得預設登入後跳轉 URL
+     *
+     * @return string 預設跳轉 URL，空字串表示使用 WordPress 預設行為
+     */
+    public static function get_default_redirect_url(): string
+    {
+        return self::get('default_redirect_url', '');
+    }
 }
