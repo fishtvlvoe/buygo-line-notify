@@ -58,11 +58,17 @@ class LoginService {
 	/**
 	 * 產生 LINE Login authorize URL
 	 *
-	 * @param string   $redirect_url 授權完成後的導向 URL
-	 * @param int|null $user_id WordPress 使用者 ID（可選）
+	 * @param string|null $redirect_url 授權完成後的導向 URL（null 表示使用後台設定）
+	 * @param int|null    $user_id WordPress 使用者 ID（可選）
 	 * @return string LINE authorize URL
 	 */
-	public function get_authorize_url( string $redirect_url, ?int $user_id = null ): string {
+	public function get_authorize_url( ?string $redirect_url = null, ?int $user_id = null ): string {
+		// 若未指定 redirect_url，使用後台設定的預設值
+		if ( empty( $redirect_url ) ) {
+			$default_redirect = SettingsService::get( 'default_redirect_url', '' );
+			$redirect_url = ! empty( $default_redirect ) ? $default_redirect : home_url( '/my-account/' );
+		}
+
 		// 產生並儲存 state
 		$state = $this->state_manager->generate_state();
 		$stored = $this->state_manager->store_state(

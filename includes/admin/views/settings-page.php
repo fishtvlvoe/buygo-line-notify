@@ -129,6 +129,26 @@ if (!defined('ABSPATH')) {
                     </td>
                 </tr>
 
+                <!-- 預設登入後跳轉 URL -->
+                <tr>
+                    <th scope="row">
+                        <label for="default_redirect_url">預設登入後跳轉 URL</label>
+                    </th>
+                    <td>
+                        <input type="url"
+                               id="default_redirect_url"
+                               name="default_redirect_url"
+                               value="<?php echo esc_attr($settings['default_redirect_url'] ?? home_url('/my-account/')); ?>"
+                               class="regular-text"
+                               placeholder="<?php echo esc_attr(home_url('/my-account/')); ?>">
+                        <p class="description">
+                            用戶完成 LINE 登入/註冊/綁定後的預設跳轉頁面。<br>
+                            若未設定，將使用「<?php echo esc_html(home_url('/my-account/')); ?>」<br>
+                            常用設定：<code><?php echo esc_html(home_url('/')); ?></code>（首頁）、<code><?php echo esc_html(home_url('/my-account/')); ?></code>（我的帳號）
+                        </p>
+                    </td>
+                </tr>
+
                 <!-- Register Flow Page 選擇器 -->
                 <tr>
                     <th scope="row">
