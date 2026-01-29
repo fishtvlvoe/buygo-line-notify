@@ -15,6 +15,7 @@ use BuygoLineNotify\Services\LoginService;
 use BuygoLineNotify\Services\LineUserService;
 use BuygoLineNotify\Services\StateManager;
 use BuygoLineNotify\Services\Logger;
+use BuygoLineNotify\Services\SettingsService;
 use BuygoLineNotify\Exceptions\NSLContinuePageRenderException;
 
 if ( ! defined( 'ABSPATH' ) ) {
@@ -425,7 +426,7 @@ class Login_Handler {
 		$user = get_user_by( 'id', $user_id );
 
 		// 1. 優先使用後台設定的「預設登入後跳轉 URL」
-		$default_redirect = Services\SettingsService::get_default_redirect_url();
+		$default_redirect = SettingsService::get_default_redirect_url();
 		if ( ! empty( $default_redirect ) ) {
 			$redirect_to = $default_redirect;
 		} else {
