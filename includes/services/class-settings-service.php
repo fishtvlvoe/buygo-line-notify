@@ -175,6 +175,26 @@ class SettingsService
     }
 
     /**
+     * 取得 LINE 登入按鈕位置設定
+     *
+     * @return string 'before' 或 'after'，預設 'before'
+     */
+    public static function get_login_button_position(): string
+    {
+        return self::get('login_button_position', 'before');
+    }
+
+    /**
+     * 取得 LINE 登入按鈕文字
+     *
+     * @return string 預設「使用 LINE 登入」
+     */
+    public static function get_login_button_text(): string
+    {
+        return self::get('login_button_text', '使用 LINE 登入');
+    }
+
+    /**
      * 取得所有設定（用於設定頁面顯示）
      *
      * @return array
@@ -188,6 +208,8 @@ class SettingsService
             'login_channel_secret',
             'liff_id',
             'liff_endpoint_url',
+            'login_button_position',
+            'login_button_text',
         ];
 
         $settings = [];
