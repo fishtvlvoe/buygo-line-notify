@@ -267,10 +267,13 @@ Plans:
   4. 同步日誌記錄到 wp_options（最近 10 筆,JSON 格式）
   5. get_avatar_url filter hook 已實作,已綁定 LINE 的用戶顯示 LINE 頭像,快取 7 天
 
-**Plans**: TBD
+**Plans**: 4 plans in 2 waves
 
 Plans:
-- [ ] 12-01: [TBD during planning]
+- [ ] 12-01-PLAN.md — ProfileSyncService 核心實作（syncProfile, shouldUpdateField, logSync）
+- [ ] 12-02-PLAN.md — AvatarService 實作 + get_avatar_url filter hook
+- [ ] 12-03-PLAN.md — 整合 ProfileSyncService 到 UserService 和 Login_Handler
+- [ ] 12-04-PLAN.md — 後台設定頁面（sync_on_login, conflict_strategy, 清除快取）
 
 ### Phase 13: 前台整合
 **Goal**: 在前台提供 LINE 登入和綁定入口
@@ -351,8 +354,8 @@ Plans:
 | 8. 資料表架構與查詢 API | 2/2 | Completed | 2026-01-29 |
 | 9. 標準 WordPress URL 機制 | 3/3 | Completed | 2026-01-29 |
 | 10. Register Flow Page 系統 | 3/3 | Completed | 2026-01-29 |
-| 11. 完整註冊/登入/綁定流程 | 0/2 | Planning complete | - |
-| 12. Profile Sync 與 Avatar 整合 | 0/TBD | Not started | - |
+| 11. 完整註冊/登入/綁定流程 | 2/2 | Completed | 2026-01-29 |
+| 12. Profile Sync 與 Avatar 整合 | 0/4 | Planning complete | - |
 | 13. 前台整合 | 0/TBD | Not started | - |
 | 14. 後台管理 | 0/TBD | Not started | - |
 | 15. 測試與文件 | 0/TBD | Not started | - |
