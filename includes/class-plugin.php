@@ -72,6 +72,12 @@ final class Plugin
             $login_api->register_routes();
         });
 
+        // 註冊 REST API（FluentCart Integration endpoints）
+        \add_action('rest_api_init', function () {
+            $fluentcart_api = new \BuygoLineNotify\Api\FluentCartIntegrationAPI();
+            $fluentcart_api->register_routes();
+        });
+
         // 註冊 Cron handler（非 FastCGI 環境的背景處理）
         \add_action('buygo_process_line_webhook', function ($events) {
             $handler = new \BuygoLineNotify\Services\WebhookHandler();
@@ -143,6 +149,7 @@ final class Plugin
         // 載入 API 類別
         include_once BuygoLineNotify_PLUGIN_DIR . 'includes/api/class-webhook-api.php';
         include_once BuygoLineNotify_PLUGIN_DIR . 'includes/api/class-login-api.php';
+        include_once BuygoLineNotify_PLUGIN_DIR . 'includes/api/class-fluentcart-integration-api.php';
 
         // 載入 Facade（供其他外掛使用）
         include_once BuygoLineNotify_PLUGIN_DIR . 'includes/class-buygo-line-notify.php';

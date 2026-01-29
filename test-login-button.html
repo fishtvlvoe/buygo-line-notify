@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>測試 LINE 登入按鈕</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 600px;
+            margin: 50px auto;
+            padding: 20px;
+        }
+        .test-section {
+            margin: 20px 0;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        .result {
+            margin-top: 10px;
+            padding: 10px;
+            background: #f5f5f5;
+            border-radius: 3px;
+            font-family: monospace;
+            font-size: 12px;
+            white-space: pre-wrap;
+        }
+        button {
+            padding: 10px 20px;
+            background: #06C755;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        button:hover {
+            background: #05b34a;
+        }
+    </style>
+</head>
+<body>
+    <h1>LINE 登入按鈕測試工具</h1>
+
+    <div class="test-section">
+        <h2>測試 1: API 端點測試</h2>
+        <button onclick="testAPI()">測試 /login/authorize API</button>
+        <div id="api-result" class="result" style="display:none;"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>測試 2: 檢查 REST API 路由</h2>
+        <button onclick="testRoutes()">檢查路由註冊</button>
+        <div id="routes-result" class="result" style="display:none;"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>測試 3: 完整登入流程</h2>
+        <button onclick="testFullFlow()">模擬登入按鈕點擊</button>
+        <div id="flow-result" class="result" style="display:none;"></div>
+    </div>
+
+    <script>
+        const siteUrl = 'https://test.buygo.me';
+        const apiBase = siteUrl + '/wp-json/buygo-line-notify/v1';
+
+        function log(elementId, message, isError = false) {
+            const el = document.getElementById(elementId);
+            el.style.display = 'block';
+            el.style.background = isError ? '#fee' : '#f5f5f5';
+            el.textContent += message + '\n';
+        }
+
+        function clearLog(elementId) {
+            const el = document.getElementById(elementId);
+            el.textContent = '';
+            el.style.display = 'none';
+        }
+
+        async function testAPI() {
+            clearLog('api-result');
+            log('api-result', '正在測試 API...');
+
+            const redirectUrl = encodeURIComponent(siteUrl);
+            const apiUrl = `${apiBase}/login/authorize?redirect_url=${redirectUrl}`;
+
+            log('api-result', `API URL: ${apiUrl}\n`);
+
+            try {
+                const response = await fetch(apiUrl, {
+                    method: 'GET',
+                    credentials: 'same-origin',
+                    headers: {
+                        'Accept': 'application/json'
+                    }
+                });
+
+                log('api-result', `HTTP Status: ${response.status} ${response.statusText}`);
+
+                const contentType = response.headers.get('content-type');
+                log('api-result', `Content-Type: ${contentType}\n`);
+
+                if (contentType && contentType.includes('application/json')) {
+                    const data = await response.json();
+                    log('api-result', 'Response Data:');
+                    log('api-result', JSON.stringify(data, null, 2));
+
+                    if (data.success && data.authorize_url) {
+                        log('api-result', '\n✅ API 回應正常！');
+                        log('api-result', `授權 URL: ${data.authorize_url.substring(0, 100)}...`);
+                    } else {
+                        log('api-result', '\n❌ API 回應異常！', true);
+                    }
+                } else {
+                    const text = await response.text();
+                    log('api-result', `非 JSON 回應:\n${text.substring(0, 500)}`, true);
+                }
+            } catch (error) {
+                log('api-result', `\n❌ 錯誤: ${error.message}`, true);
+                console.error('API Test Error:', error);
+            }
+        }
+
+        async function testRoutes() {
+            clearLog('routes-result');
+            log('routes-result', '正在檢查 REST API 路由...');
+
+            try {
+                const response = await fetch(`${siteUrl}/wp-json/`);
+                const data = await response.json();
+
+                log('routes-result', 'WordPress REST API 根端點：');
+                log('routes-result', JSON.stringify(data, null, 2));
+
+                // 檢查 namespace
+                const namespaces = data.namespaces || [];
+                const hasNamespace = namespaces.includes('buygo-line-notify/v1');
+
+                log('routes-result', `\nbuygo-line-notify/v1 namespace: ${hasNamespace ? '✅ 已註冊' : '❌ 未註冊'}`);
+
+                if (hasNamespace) {
+                    log('routes-result', '\n嘗試取得路由列表...');
+                    const routesResponse = await fetch(`${apiBase}/`);
+                    if (routesResponse.ok) {
+                        const routesData = await routesResponse.json();
+                        log('routes-result', JSON.stringify(routesData, null, 2));
+                    }
+                }
+            } catch (error) {
+                log('routes-result', `❌ 錯誤: ${error.message}`, true);
+            }
+        }
+
+        async function testFullFlow() {
+            clearLog('flow-result');
+            log('flow-result', '正在模擬完整登入流程...\n');
+
+            const redirectUrl = encodeURIComponent(siteUrl);
+            const apiUrl = `${apiBase}/login/authorize?redirect_url=${redirectUrl}`;
+
+            log('flow-result', 'Step 1: 呼叫 authorize API');
+            log('flow-result', `URL: ${apiUrl}\n`);
+
+            try {
+                const response = await fetch(apiUrl, {
+                    method: 'GET',
+                    credentials: 'same-origin'
+                });
+
+                log('flow-result', `HTTP Status: ${response.status}`);
+
+                const data = await response.json();
+                log('flow-result', `Response: ${JSON.stringify(data, null, 2)}\n`);
+
+                if (data.success && data.authorize_url) {
+                    log('flow-result', '✅ Step 1 成功！');
+                    log('flow-result', `\nStep 2: 準備跳轉到 LINE 授權頁面`);
+                    log('flow-result', `授權 URL: ${data.authorize_url.substring(0, 100)}...\n`);
+
+                    log('flow-result', '❓ 是否要實際跳轉？（5 秒後自動跳轉）');
+
+                    setTimeout(() => {
+                        if (confirm('要跳轉到 LINE 授權頁面嗎？')) {
+                            log('flow-result', '正在跳轉...');
+                            window.location.href = data.authorize_url;
+                        } else {
+                            log('flow-result', '已取消跳轉');
+                        }
+                    }, 5000);
+                } else {
+                    log('flow-result', '❌ Step 1 失敗！', true);
+                    log('flow-result', `錯誤訊息: ${data.message || '未知錯誤'}`, true);
+                }
+            } catch (error) {
+                log('flow-result', `❌ 發生錯誤: ${error.message}`, true);
+                console.error('Flow Test Error:', error);
+            }
+        }
+    </script>
+</body>
+</html>
