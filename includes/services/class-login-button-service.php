@@ -197,10 +197,10 @@ class LoginButtonService {
 				.then(function(response) { return response.json(); })
 				.then(function(data) {
 					if (data.success && data.authorize_url) {
-						// 在新分頁開啟 LINE 授權頁面
-						window.open(data.authorize_url, '_blank');
+						// 直接在當前視窗跳轉到 LINE 授權頁面
+						window.location.href = data.authorize_url;
 					} else {
-						alert('取得授權 URL 失敗');
+						alert('取得授權 URL 失敗：' + (data.message || '未知錯誤'));
 						btn.disabled = false;
 						if (loading) loading.style.display = 'none';
 					}
