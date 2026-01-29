@@ -99,6 +99,12 @@ final class Plugin
             $shortcode = new \BuygoLineNotify\Shortcodes\RegisterFlowShortcode();
             return $shortcode->render($atts, null);
         });
+
+        // 註冊 [buygo_line_login] shortcode
+        if (!\class_exists('BuygoLineNotify\Shortcodes\LoginButtonShortcode')) {
+            include_once BuygoLineNotify_PLUGIN_DIR . 'includes/shortcodes/class-login-button-shortcode.php';
+        }
+        \BuygoLineNotify\Shortcodes\LoginButtonShortcode::register();
     }
 
     private function loadDependencies(): void
