@@ -75,9 +75,14 @@ class FluentCartCustomerProfileIntegration {
 			]
 		);
 
-		// 載入樣式
+		// 載入樣式（使用 wp_enqueue_style + wp_add_inline_style 更安全）
+		\wp_register_style(
+			'buygo-line-fluentcart-widget',
+			false // 不需要外部 CSS 檔案
+		);
+		\wp_enqueue_style( 'buygo-line-fluentcart-widget' );
 		\wp_add_inline_style(
-			'fluent-cart-customer-profile', // FluentCart 的樣式 handle
+			'buygo-line-fluentcart-widget',
 			self::get_inline_css()
 		);
 	}
