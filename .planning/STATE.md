@@ -11,26 +11,26 @@ See: .planning/PROJECT.md (updated 2026-01-29)
 ## Current Position
 
 Milestone: v0.2 (LINE Login 完整重構)
-Phase: 11 of 15 (完整註冊/登入/綁定流程)
+Phase: 12 of 15 (Profile Sync 與 Avatar 整合)
 Plan: 01 of TBD
 Status: In progress (1/TBD plans complete)
-Last activity: 2026-01-29 — Completed Phase 11-01: 已登入用戶綁定 LINE 帳號處理
+Last activity: 2026-01-29 — Completed Phase 12-01: ProfileSyncService 核心服務類別
 
-Progress: [████████████░░░░░░░░] 61% overall (2/7 v0.1 phases completed, 4/8 v0.2 phases complete, Phase 11 in progress)
+Progress: [████████████░░░░░░░░] 63% overall (2/7 v0.1 phases completed, 4/8 v0.2 phases complete, Phase 11-12 in progress)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 17 (Phase 1: 4 plans, Phase 2: 2 plans, Phase 8: 2 plans, Phase 9: 3 plans, Phase 10: 3 plans, Phase 11: 1 plan, Phase 14: 2 plans)
+- Total plans completed: 18 (Phase 1: 4 plans, Phase 2: 2 plans, Phase 8: 2 plans, Phase 9: 3 plans, Phase 10: 3 plans, Phase 11: 1 plan, Phase 12: 1 plan, Phase 14: 2 plans)
 - Average duration: ~2.9 min per plan
-- Total execution time: ~52 min (v0.1 + v0.2)
+- Total execution time: ~54 min (v0.1 + v0.2)
 
 **By Milestone:**
 
 | Milestone | Phases | Plans | Requirements | Completion |
 |-----------|--------|-------|--------------|------------|
 | v0.1 基礎架構 | 2/7 | 6/TBD | 24/~40 | Partial (Phase 1-2 完成) |
-| v0.2 LINE Login 重構 | 4/8 | 8/TBD | 14/49 | Phase 8-10 complete, Phase 11 in progress |
+| v0.2 LINE Login 重構 | 4/8 | 9/TBD | 14/49 | Phase 8-10 complete, Phase 11-12 in progress |
 | v0.3 進階功能 | 0/TBD | 0/TBD | 0/TBD | Not planned |
 
 **v0.1 Milestone Summary (Partial Complete):**
@@ -43,7 +43,7 @@ Progress: [████████████░░░░░░░░] 61% ove
 - Phase 9: ✅ 標準 WordPress URL 機制（URL + NSL-01: 5 需求完成）
 - Phase 10: ✅ Register Flow Page 系統（NSL + RFP: 9 需求完成 - 3/3 plans complete）
 - Phase 11: 🔄 完整註冊/登入/綁定流程（FLOW + STORAGE: 3/6 需求完成 - 1/TBD plans complete）
-- Phase 12: Profile Sync 與 Avatar 整合（SYNC + AVATAR: 10 需求）
+- Phase 12: 🔄 Profile Sync 與 Avatar 整合（SYNC + AVATAR: 1/10 需求完成 - 1/TBD plans complete）
 - Phase 13: 前台整合（FRONTEND: 5 需求）
 - Phase 14: 後台管理（BACKEND: 5 需求）
 - Phase 15: 測試與文件（TEST + DOC: 7 需求）
@@ -51,6 +51,7 @@ Progress: [████████████░░░░░░░░] 61% ove
 **Total v0.2 Requirements: 49**
 
 **Recent Activity:**
+- 2026-01-29: Phase 12-01 completed（ProfileSyncService 核心服務類別 - SYNC-01: syncProfile + shouldUpdateField + logSync）
 - 2026-01-29: Phase 11-01 completed（已登入用戶綁定 LINE 帳號處理 - FLOW-03: handle_link_submission + FLOW_LINK）
 - 2026-01-29: Phase 10 completed（Register Flow Page 系統 - 3 plans, 9 requirements, checkpoint 驗證全部通過）
 - 2026-01-29: Phase 10 Plan 03 checkpoint verification（4 test cases: Register Flow Page, Fallback mode, Auto-link, Settings page）
@@ -59,7 +60,7 @@ Progress: [████████████░░░░░░░░] 61% ove
 - 2026-01-29: Phase 9 completed（標準 WordPress URL 機制 - 3 plans, 5 requirements）
 - 2026-01-29: Phase 8 completed（資料表架構與查詢 API - 2 plans, 3 requirements）
 
-*Updated: 2026-01-29 after Phase 11-01 completion*
+*Updated: 2026-01-29 after Phase 12-01 completion*
 
 ## Accumulated Context
 
@@ -75,6 +76,13 @@ Recent decisions affecting current work:
 - **NSLContinuePageRenderException**: 完美處理 LINE 瀏覽器問題
 - **Register Flow Page + Shortcode**: 靈活整合、可放任何頁面
 - **LIFF 延後到 v0.3**: Nextend 架構已足夠,先驗證再決定
+
+**Phase 12 Implementation Decisions:**
+- **register 動作強制同步，無視衝突策略**: 新用戶註冊時應使用 LINE profile 資料，確保資料完整性
+- **login 動作依據 sync_on_login 設定決定是否同步**: 登入時同步可能覆蓋用戶自訂資料，應由管理員控制（預設關閉）
+- **Email 更新前檢查 email_exists()**: 避免 Email 衝突導致 wp_update_user() 失敗
+- **manual 策略呼叫 logConflict()，不自動更新**: 管理員希望手動審核衝突，需要記錄差異
+- **日誌儲存到 wp_options（autoload=false），最多保留 10 筆**: 避免 autoload 影響效能，限制日誌筆數避免無限增長
 
 **Phase 11 Implementation Decisions:**
 - **redirect_with_error() 取代 wp_die()**: 綁定錯誤使用 Transient + redirect 提供使用者友善訊息
@@ -146,12 +154,13 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-01-29 08:32
-Stopped at: Phase 11-01 complete (handle_link_submission + FLOW_LINK detection)
+Last session: 2026-01-29 09:24
+Stopped at: Phase 12-01 complete (ProfileSyncService 核心服務類別)
 Resume file: None
-Resume: Continue Phase 11
+Resume: Continue Phase 12
 
 **Next steps:**
-1. Phase 11-02: 實作 Login flow（已登入用戶發起登入的處理）
-2. Phase 11-03: 實作 Link Flow Shortcode（綁定確認頁面）
-3. Phase 11 將完成所有用戶認證流程（register, login, link, auto-link）
+1. Phase 12-02: 在註冊/登入/綁定流程中呼叫 ProfileSyncService::syncProfile()
+2. Phase 12-03: 實作 Avatar 整合（get_avatar_url filter hook）
+3. Phase 11-02: 實作 Login flow（已登入用戶發起登入的處理）
+4. Phase 11-03: 實作 Link Flow Shortcode（綁定確認頁面）
