@@ -210,6 +210,8 @@ class SettingsService
             'liff_endpoint_url',
             'login_button_position',
             'login_button_text',
+            'sync_on_login',       // 登入時是否同步 profile
+            'conflict_strategy',   // 衝突處理策略
         ];
 
         $settings = [];
@@ -218,5 +220,27 @@ class SettingsService
         }
 
         return $settings;
+    }
+
+    /**
+     * 取得是否在登入時同步 Profile
+     *
+     * @return bool
+     */
+    public static function get_sync_on_login(): bool
+    {
+        return (bool) self::get('sync_on_login', false);
+    }
+
+    /**
+     * 取得衝突處理策略
+     *
+     * @return string 'line_priority' | 'wordpress_priority' | 'manual'
+     */
+    public static function get_conflict_strategy(): string
+    {
+        $strategy = self::get('conflict_strategy', 'line_priority');
+        $valid = ['line_priority', 'wordpress_priority', 'manual'];
+        return in_array($strategy, $valid, true) ? $strategy : 'line_priority';
     }
 }
