@@ -385,6 +385,77 @@ if (!defined('ABSPATH')) {
             </tbody>
         </table>
 
+        <!-- Profile Sync 設定 -->
+        <h2>Profile 同步設定</h2>
+        <table class="form-table" role="presentation">
+            <tbody>
+                <tr>
+                    <th scope="row">
+                        <label for="buygo_line_sync_on_login">登入時更新 Profile</label>
+                    </th>
+                    <td>
+                        <label>
+                            <input type="checkbox" name="buygo_line_sync_on_login" id="buygo_line_sync_on_login"
+                                value="1" <?php checked(\BuygoLineNotify\Services\SettingsService::get('sync_on_login', false)); ?>>
+                            啟用登入時自動同步 Profile
+                        </label>
+                        <p class="description">
+                            從 LINE 同步最新的名稱、Email、頭像。<br>
+                            <strong>注意：</strong>可能覆蓋用戶手動修改的資料，建議僅在初期使用。
+                        </p>
+                    </td>
+                </tr>
+                <tr>
+                    <th scope="row">
+                        <label>衝突處理策略</label>
+                    </th>
+                    <td>
+                        <?php $conflict_strategy = \BuygoLineNotify\Services\SettingsService::get('conflict_strategy', 'line_priority'); ?>
+                        <fieldset>
+                            <legend class="screen-reader-text"><span>衝突處理策略</span></legend>
+
+                            <label>
+                                <input type="radio" name="buygo_line_conflict_strategy" value="line_priority"
+                                    <?php checked($conflict_strategy, 'line_priority'); ?>>
+                                <strong>LINE 優先</strong> — LINE profile 覆蓋 WordPress 資料
+                            </label>
+                            <br>
+
+                            <label>
+                                <input type="radio" name="buygo_line_conflict_strategy" value="wordpress_priority"
+                                    <?php checked($conflict_strategy, 'wordpress_priority'); ?>>
+                                <strong>WordPress 優先</strong> — 保留 WordPress 現有資料，只寫入空白欄位
+                            </label>
+                            <br>
+
+                            <label>
+                                <input type="radio" name="buygo_line_conflict_strategy" value="manual"
+                                    <?php checked($conflict_strategy, 'manual'); ?>>
+                                <strong>手動處理</strong> — 不自動同步，記錄差異讓管理員決定
+                            </label>
+
+                            <p class="description">
+                                當 LINE profile 與 WordPress 用戶資料不一致時的處理方式。<br>
+                                預設「LINE 優先」適合大多數情況，「手動處理」適合需要審核用戶資料變更的場景。
+                            </p>
+                        </fieldset>
+                    </td>
+                </tr>
+                <tr>
+                    <th scope="row">清除頭像快取</th>
+                    <td>
+                        <button type="button" class="button" id="buygo-clear-avatar-cache">
+                            清除所有用戶的 LINE 頭像快取
+                        </button>
+                        <span id="buygo-clear-cache-result" style="margin-left: 10px;"></span>
+                        <p class="description">
+                            清除後，下次顯示頭像時會使用快取（若未過期）或等待下次登入更新。
+                        </p>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+
         <?php submit_button('儲存設定', 'primary', 'buygo_line_settings_submit'); ?>
     </form>
 </div>
@@ -431,6 +502,32 @@ function copyCallbackUrl() {
         alert('請手動複製 Callback URL');
     });
 }
+
+// 清除頭像快取按鈕處理
+jQuery(document).ready(function($) {
+    $('#buygo-clear-avatar-cache').on('click', function() {
+        var $button = $(this);
+        var $result = $('#buygo-clear-cache-result');
+
+        $button.prop('disabled', true).text('清除中...');
+        $result.text('');
+
+        $.post(ajaxurl, {
+            action: 'buygo_line_clear_avatar_cache',
+            nonce: '<?php echo wp_create_nonce('buygo_line_clear_avatar_cache'); ?>'
+        }, function(response) {
+            if (response.success) {
+                $result.html('<span style="color: green;">已清除 ' + response.data.count + ' 個用戶的頭像快取</span>');
+            } else {
+                $result.html('<span style="color: red;">清除失敗：' + (response.data.message || '未知錯誤') + '</span>');
+            }
+            $button.prop('disabled', false).text('清除所有用戶的 LINE 頭像快取');
+        }).fail(function() {
+            $result.html('<span style="color: red;">請求失敗，請重試</span>');
+            $button.prop('disabled', false).text('清除所有用戶的 LINE 頭像快取');
+        });
+    });
+});
 </script>
 
 <style>
