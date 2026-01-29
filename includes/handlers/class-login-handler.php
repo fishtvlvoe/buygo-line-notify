@@ -95,6 +95,12 @@ class Login_Handler {
 			return;
 		}
 
+		// 檢查是否為綁定表單提交
+		if ( isset( $_POST['action'] ) && $_POST['action'] === 'buygo_line_link' ) {
+			$this->handle_link_submission();
+			return;
+		}
+
 		try {
 			// 判斷是 authorize 還是 callback
 			if ( isset( $_GET['code'] ) && isset( $_GET['state'] ) ) {
@@ -271,16 +277,76 @@ class Login_Handler {
 		// 3. 查詢是否已綁定用戶
 		$user_id = LineUserService::getUserByLineUid( $line_uid );
 
+		// 4. 檢查是否為綁定流程（state_data 包含有效 user_id）
+		// 重要：此判斷必須在 if ($user_id) 登入判斷之前執行
+		$link_user_id = $state_data['user_id'] ?? 0;
+
+		if ( $link_user_id > 0 ) {
+			// 這是綁定流程
+
+			// 4a. 若 LINE UID 已綁定其他用戶,拒絕
+			if ( $user_id && $user_id !== $link_user_id ) {
+				Logger::get_instance()->log(
+					'error',
+					array(
+						'message'       => 'Link flow: LINE UID already linked to another user',
+						'link_user_id'  => $link_user_id,
+						'existing_user' => $user_id,
+						'line_uid'      => $line_uid,
+					)
+				);
+				wp_die( '此 LINE 帳號已綁定其他用戶', 'Error', array( 'response' => 400 ) );
+			}
+
+			// 4b. 若 LINE UID 已綁定同一用戶,直接登入
+			if ( $user_id === $link_user_id ) {
+				Logger::get_instance()->log(
+					'info',
+					array(
+						'message' => 'Link flow: Already linked, logging in',
+						'user_id' => $user_id,
+					)
+				);
+				$this->perform_login( $user_id, $state_data );
+				return;
+			}
+
+			// 4c. 儲存 profile 並拋出 FLOW_LINK 例外
+			$profile_key = self::PROFILE_TRANSIENT_PREFIX . $state;
+			set_transient(
+				$profile_key,
+				array(
+					'profile'    => $profile,
+					'state_data' => $state_data,
+					'state'      => $state,
+					'timestamp'  => time(),
+				),
+				self::PROFILE_TRANSIENT_EXPIRY
+			);
+
+			throw new NSLContinuePageRenderException(
+				NSLContinuePageRenderException::FLOW_LINK,
+				array(
+					'profile'    => $profile,
+					'state_data' => $state_data,
+					'state'      => $state,
+					'user_id'    => $link_user_id,
+				)
+			);
+			// 注意：throw 後不會繼續執行，所以不需要 return
+		}
+
+		// 5. 非綁定流程：原有的登入/註冊邏輯
 		if ( $user_id ) {
 			// 已綁定用戶，執行登入
 			$this->perform_login( $user_id, $state_data );
 		} else {
 			// 未綁定用戶，需要註冊流程
 
-			// 1. 產生 profile transient key（使用原始 state）
+			// 6. 產生 profile transient key（使用原始 state）
 			$profile_key = self::PROFILE_TRANSIENT_PREFIX . $state;
 
-			// 2. 儲存 LINE profile 到 Transient（供 shortcode 使用）
+			// 7. 儲存 LINE profile 到 Transient（供 shortcode 使用）
 			set_transient(
 				$profile_key,
 				array(
@@ -301,10 +367,10 @@ class Login_Handler {
 				)
 			);
 
-			// 3. 動態註冊 shortcode
+			// 8. 動態註冊 shortcode
 			$this->register_shortcode_dynamically( $state );
 
-			// 4. 拋出例外（讓頁面繼續渲染）
+			// 9. 拋出例外（讓頁面繼續渲染）
 			throw new NSLContinuePageRenderException(
 				NSLContinuePageRenderException::FLOW_REGISTER,
 				array(
@@ -316,7 +382,7 @@ class Login_Handler {
 			);
 		}
 
-		// 4. 消費 state（防重放攻擊）
+		// 10. 消費 state（防重放攻擊）
 		// 注意：LoginService->handle_callback() 已經內部消費 state
 		// 這裡註解掉避免重複消費
 		// $this->state_manager->consume_state( $state );
@@ -729,6 +795,181 @@ class Login_Handler {
 		// 導向
 		$redirect_to = $state_data['redirect_url'] ?? home_url();
 		$redirect_to = apply_filters( 'login_redirect', $redirect_to, '', get_user_by( 'id', $user_id ) );
+
+		wp_safe_redirect( $redirect_to );
+		exit;
+	}
+
+	/**
+	 * 錯誤處理 helper method（友善的錯誤訊息）
+	 *
+	 * @param string $error_code 錯誤代碼
+	 * @param string $message 錯誤訊息
+	 * @param string $redirect_url 導向 URL
+	 * @return void
+	 */
+	private function redirect_with_error( string $error_code, string $message, string $redirect_url ): void {
+		set_transient(
+			'buygo_line_link_error_' . get_current_user_id(),
+			array(
+				'code'    => $error_code,
+				'message' => $message,
+				'time'    => time(),
+			),
+			60 // 1 分鐘過期
+		);
+		wp_safe_redirect( add_query_arg( 'line_link_error', $error_code, $redirect_url ) );
+		exit;
+	}
+
+	/**
+	 * 處理綁定表單提交（已登入用戶綁定 LINE 帳號）
+	 *
+	 * @return void
+	 */
+	private function handle_link_submission(): void {
+		// 取得 state 用於 Transient 清除
+		$state       = isset( $_POST['state'] ) ? sanitize_text_field( wp_unslash( $_POST['state'] ) ) : '';
+		$profile_key = self::PROFILE_TRANSIENT_PREFIX . $state;
+
+		// 1. Nonce 驗證
+		if ( ! isset( $_POST['buygo_line_link_nonce'] ) ||
+		     ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['buygo_line_link_nonce'] ) ), 'buygo_line_link_action' ) ) {
+			// 安全驗證失敗不清除 Transient（可能是 CSRF 攻擊）
+			$redirect_url = home_url();
+			$this->redirect_with_error( 'nonce_failed', '安全驗證失敗，請重新操作', $redirect_url );
+		}
+
+		// 2. 驗證 state 和 Transient
+		$data = get_transient( $profile_key );
+
+		if ( $data === false ) {
+			Logger::get_instance()->log(
+				'error',
+				array(
+					'message' => 'Link submission: Profile transient not found',
+					'state'   => $state,
+				)
+			);
+			wp_die( '登入資料已過期，請重新嘗試 LINE 登入', 'Error', array( 'response' => 400 ) );
+		}
+
+		$profile    = $data['profile'];
+		$state_data = $data['state_data'];
+		$line_uid   = $profile['userId'];
+
+		// 3. 用戶 ID 一致性驗證（防篡改）
+		$link_user_id = $state_data['user_id'] ?? 0;
+		$current_user_id = get_current_user_id();
+
+		if ( $link_user_id !== $current_user_id ) {
+			Logger::get_instance()->log(
+				'error',
+				array(
+					'message'         => 'Link submission: User ID mismatch',
+					'state_user_id'   => $link_user_id,
+					'current_user_id' => $current_user_id,
+				)
+			);
+			// 身份驗證失敗，清除 Transient
+			delete_transient( $profile_key );
+			$this->redirect_with_error( 'user_mismatch', '身份驗證失敗，請重新登入', wp_login_url() );
+		}
+
+		// 4. LINE UID 是否已綁定其他用戶檢查
+		$existing_user_id = LineUserService::getUserByLineUid( $line_uid );
+		if ( $existing_user_id && $existing_user_id !== $current_user_id ) {
+			Logger::get_instance()->log(
+				'error',
+				array(
+					'message'          => 'Link submission: LINE UID already linked to another user',
+					'current_user_id'  => $current_user_id,
+					'existing_user_id' => $existing_user_id,
+					'line_uid'         => $line_uid,
+				)
+			);
+			// LINE 已綁定其他用戶，清除 Transient
+			delete_transient( $profile_key );
+			$redirect_url = $state_data['redirect_url'] ?? home_url();
+			$this->redirect_with_error(
+				'line_already_linked',
+				'此 LINE 帳號已綁定其他用戶，若需解除綁定請聯繫管理員',
+				$redirect_url
+			);
+		}
+
+		// 5. 當前用戶是否已綁定其他 LINE 檢查
+		$existing_line_uid = LineUserService::getLineUidByUserId( $current_user_id );
+		if ( $existing_line_uid && $existing_line_uid !== $line_uid ) {
+			Logger::get_instance()->log(
+				'error',
+				array(
+					'message'           => 'Link submission: User already linked to another LINE',
+					'current_user_id'   => $current_user_id,
+					'existing_line_uid' => $existing_line_uid,
+					'new_line_uid'      => $line_uid,
+				)
+			);
+			// 用戶已綁定其他 LINE，清除 Transient
+			delete_transient( $profile_key );
+			$redirect_url = $state_data['redirect_url'] ?? home_url();
+			$this->redirect_with_error(
+				'user_already_linked',
+				'您的帳號已綁定其他 LINE 帳號，請先解除綁定',
+				$redirect_url
+			);
+		}
+
+		// 6. 執行綁定（is_registration = false）
+		$link_result = LineUserService::linkUser( $current_user_id, $line_uid, false );
+		if ( ! $link_result ) {
+			Logger::get_instance()->log(
+				'error',
+				array(
+					'message' => 'Link submission: linkUser failed',
+					'user_id' => $current_user_id,
+					'line_uid' => $line_uid,
+				)
+			);
+			// 綁定失敗，清除 Transient
+			delete_transient( $profile_key );
+			$redirect_url = $state_data['redirect_url'] ?? home_url();
+			$this->redirect_with_error( 'link_failed', '綁定失敗，請稍後再試', $redirect_url );
+		}
+
+		// 7. 儲存 LINE 頭像 URL 到 user_meta
+		if ( ! empty( $profile['pictureUrl'] ) ) {
+			update_user_meta( $current_user_id, 'buygo_line_avatar_url', $profile['pictureUrl'] );
+		}
+
+		Logger::get_instance()->log(
+			'info',
+			array(
+				'message'  => 'User linked LINE account successfully',
+				'user_id'  => $current_user_id,
+				'line_uid' => $line_uid,
+			)
+		);
+
+		// 8. 清除 Transient（成功）
+		delete_transient( $profile_key );
+
+		// 9. 觸發 hook（供其他外掛使用）
+		do_action( 'buygo_line_after_link', $current_user_id, $line_uid, $profile );
+
+		// 10. 設定成功通知（Transient）
+		set_transient(
+			'buygo_line_notice_' . $current_user_id,
+			array(
+				'type'    => 'success',
+				'message' => 'LINE 帳號綁定成功',
+			),
+			60
+		);
+
+		// 11. 導向到 redirect_url
+		$redirect_to = $state_data['redirect_url'] ?? home_url();
+		$redirect_to = apply_filters( 'login_redirect', $redirect_to, '', get_user_by( 'id', $current_user_id ) );
 
 		wp_safe_redirect( $redirect_to );
 		exit;
