@@ -1,5 +1,47 @@
 # Changelog
 
+## 2026-01-29 (Session 4)
+
+### 修復 (fix)
+
+#### 登入導向問題修復
+
+**問題 1：權限錯誤**
+- subscriber 用戶登入後嘗試訪問後台頁面顯示「必須具備更高的權限」錯誤
+- 修正：加入權限檢查，無 edit_posts 權限時自動導向首頁
+
+**問題 2：預設跳轉 URL 功能未實作**
+- 後台設定頁面有「預設登入後跳轉 URL」欄位但無對應邏輯
+- 新增：`SettingsService::get_default_redirect_url()` 方法
+- 整合：`Login_Handler::perform_login()` 導向邏輯優化
+- 儲存：`SettingsPage` 處理 `default_redirect_url` 欄位
+
+**問題 3：Fatal Error**
+- 錯誤：`Class 'BuygoLineNotify\Handlers\Services\SettingsService' not found`
+- 修正：新增 `use BuygoLineNotify\Services\SettingsService;`
+
+**問題 4：後台無法顯示設定值**
+- `SettingsService::get_all()` 的 `$keys` 陣列缺少 `default_redirect_url`
+- 修正：在 `$keys` 陣列中新增該欄位
+
+**導向優先順序（最終版）**：
+1. 後台設定的「預設登入後跳轉 URL」（最高優先）
+2. OAuth 開始時的頁面（檢查權限）
+3. 權限檢查：後台頁面 && 無權限 → 首頁
+4. 套用 `login_redirect` filter
+
+**Commits**：
+- `62e7260` - fix(settings): add default_redirect_url to get_all() keys
+- `72d1b86` - fix(login): add missing SettingsService import
+- `092d1bd` - fix(login): implement default redirect URL and admin access check
+
+**變更檔案**：
+- `includes/handlers/class-login-handler.php` - 導向邏輯 + namespace import
+- `includes/services/class-settings-service.php` - get_default_redirect_url() + get_all()
+- `includes/admin/class-settings-page.php` - 儲存 default_redirect_url
+
+---
+
 ## 2026-01-29 (Session 3)
 
 ### 功能 (feat)
