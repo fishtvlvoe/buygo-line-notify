@@ -80,46 +80,62 @@ class UserListColumn
             return $output;
         }
 
-        // 檢查是否已綁定 LINE
-        $is_linked = \BuygoLineNotify\Services\LineUserService::isUserLinked($user_id);
+        // 錯誤處理：捕獲資料庫查詢異常
+        try {
+            // 檢查資料表是否存在
+            global $wpdb;
+            $table_name = $wpdb->prefix . 'buygo_line_users';
+            $table_exists = $wpdb->get_var($wpdb->prepare("SHOW TABLES LIKE %s", $table_name)) === $table_name;
 
-        if (!$is_linked) {
-            return '<span style="color: #999;">—</span>';
+            if (!$table_exists) {
+                return '<span style="color: #999;" title="資料表不存在">—</span>';
+            }
+
+            // 檢查是否已綁定 LINE
+            $is_linked = \BuygoLineNotify\Services\LineUserService::isUserLinked($user_id);
+
+            if (!$is_linked) {
+                return '<span style="color: #999;">—</span>';
+            }
+
+            // 取得 LINE 資料
+            $line_data = \BuygoLineNotify\Services\LineUserService::getBinding($user_id);
+            if (!$line_data) {
+                return '<span style="color: #999;">—</span>';
+            }
+
+            // 取得頭像和名稱
+            $display_name = \get_user_meta($user_id, 'buygo_line_display_name', true);
+            $avatar_url = \get_user_meta($user_id, 'buygo_line_avatar_url', true);
+
+            $output = '<div style="display: flex; align-items: center; gap: 8px;">';
+
+            // 顯示頭像
+            if ($avatar_url) {
+                $output .= '<img src="' . esc_url($avatar_url) . '"
+                                alt="LINE Avatar"
+                                style="width: 32px; height: 32px; border-radius: 50%; border: 2px solid #06C755;">';
+            }
+
+            // 顯示名稱
+            $output .= '<div style="display: flex; flex-direction: column;">';
+            $output .= '<span style="color: #06C755; font-weight: 500;">✓ ' . esc_html($display_name ?: 'LINE 用戶') . '</span>';
+
+            // 顯示綁定日期
+            if (!empty($line_data->link_date)) {
+                $link_date = date_i18n('Y-m-d', strtotime($line_data->link_date));
+                $output .= '<span style="font-size: 11px; color: #666;">綁定於 ' . esc_html($link_date) . '</span>';
+            }
+
+            $output .= '</div>';
+            $output .= '</div>';
+
+            return $output;
+        } catch (\Exception $e) {
+            // 捕獲任何錯誤,避免影響整個頁面
+            error_log('BuyGo Line Notify - UserListColumn error: ' . $e->getMessage());
+            return '<span style="color: #999;" title="載入錯誤">—</span>';
         }
-
-        // 取得 LINE 資料
-        $line_data = \BuygoLineNotify\Services\LineUserService::getUser($user_id);
-        if (!$line_data) {
-            return '<span style="color: #999;">—</span>';
-        }
-
-        // 取得頭像和名稱
-        $display_name = \get_user_meta($user_id, 'buygo_line_display_name', true);
-        $avatar_url = \get_user_meta($user_id, 'buygo_line_avatar_url', true);
-
-        $output = '<div style="display: flex; align-items: center; gap: 8px;">';
-
-        // 顯示頭像
-        if ($avatar_url) {
-            $output .= '<img src="' . esc_url($avatar_url) . '"
-                            alt="LINE Avatar"
-                            style="width: 32px; height: 32px; border-radius: 50%; border: 2px solid #06C755;">';
-        }
-
-        // 顯示名稱
-        $output .= '<div style="display: flex; flex-direction: column;">';
-        $output .= '<span style="color: #06C755; font-weight: 500;">✓ ' . esc_html($display_name ?: 'LINE 用戶') . '</span>';
-
-        // 顯示綁定日期
-        if (!empty($line_data['link_date'])) {
-            $link_date = date_i18n('Y-m-d', strtotime($line_data['link_date']));
-            $output .= '<span style="font-size: 11px; color: #666;">綁定於 ' . esc_html($link_date) . '</span>';
-        }
-
-        $output .= '</div>';
-        $output .= '</div>';
-
-        return $output;
     }
 
     /**
@@ -151,15 +167,26 @@ class UserListColumn
             return;
         }
 
-        global $wpdb;
-        $table_name = $wpdb->prefix . 'buygo_line_users';
+        try {
+            global $wpdb;
+            $table_name = $wpdb->prefix . 'buygo_line_users';
 
-        // 使用 LEFT JOIN 讓未綁定用戶也能正確排序
-        $query->query_from .= " LEFT JOIN {$table_name} AS line_users ON {$wpdb->users}.ID = line_users.user_id";
+            // 檢查資料表是否存在
+            $table_exists = $wpdb->get_var($wpdb->prepare("SHOW TABLES LIKE %s", $table_name)) === $table_name;
+            if (!$table_exists) {
+                return; // 資料表不存在,跳過排序
+            }
 
-        // 按綁定狀態排序（已綁定優先或未綁定優先）
-        $order = $query->get('order') ?: 'ASC';
-        $query->query_orderby = " ORDER BY (line_users.user_id IS NOT NULL) {$order}, {$wpdb->users}.ID {$order}";
+            // 使用 LEFT JOIN 讓未綁定用戶也能正確排序
+            $query->query_from .= " LEFT JOIN {$table_name} AS line_users ON {$wpdb->users}.ID = line_users.user_id";
+
+            // 按綁定狀態排序（已綁定優先或未綁定優先）
+            $order = $query->get('order') ?: 'ASC';
+            $query->query_orderby = " ORDER BY (line_users.user_id IS NOT NULL) {$order}, {$wpdb->users}.ID {$order}";
+        } catch (\Exception $e) {
+            error_log('BuyGo Line Notify - handle_line_column_sorting error: ' . $e->getMessage());
+            return; // 發生錯誤時跳過排序
+        }
     }
 
     /**
@@ -199,16 +226,34 @@ class UserListColumn
             return;
         }
 
-        global $wpdb;
-        $table_name = $wpdb->prefix . 'buygo_line_users';
+        try {
+            global $wpdb;
+            $table_name = $wpdb->prefix . 'buygo_line_users';
 
-        if ($filter === 'linked') {
-            // 只顯示已綁定 LINE 的用戶
-            $query->query_from .= " INNER JOIN {$table_name} AS line_users ON {$wpdb->users}.ID = line_users.user_id";
-        } elseif ($filter === 'not_linked') {
-            // 只顯示未綁定 LINE 的用戶
-            $query->query_from .= " LEFT JOIN {$table_name} AS line_users ON {$wpdb->users}.ID = line_users.user_id";
-            $query->query_where .= " AND line_users.user_id IS NULL";
+            // 檢查資料表是否存在
+            $table_exists = $wpdb->get_var($wpdb->prepare("SHOW TABLES LIKE %s", $table_name)) === $table_name;
+            if (!$table_exists) {
+                return; // 資料表不存在,跳過篩選
+            }
+
+            if ($filter === 'linked') {
+                // 只顯示已綁定 LINE 的用戶
+                // 使用 WHERE EXISTS 避免與其他 hooks 的 JOIN 衝突
+                $query->query_where .= " AND EXISTS (
+                    SELECT 1 FROM {$table_name}
+                    WHERE {$table_name}.user_id = {$wpdb->users}.ID
+                )";
+            } elseif ($filter === 'not_linked') {
+                // 只顯示未綁定 LINE 的用戶
+                // 使用 WHERE NOT EXISTS 避免與其他 hooks 的 JOIN 衝突
+                $query->query_where .= " AND NOT EXISTS (
+                    SELECT 1 FROM {$table_name}
+                    WHERE {$table_name}.user_id = {$wpdb->users}.ID
+                )";
+            }
+        } catch (\Exception $e) {
+            error_log('BuyGo Line Notify - handle_line_filter error: ' . $e->getMessage());
+            return; // 發生錯誤時跳過篩選
         }
     }
 
