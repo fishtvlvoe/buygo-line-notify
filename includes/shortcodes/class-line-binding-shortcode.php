@@ -100,9 +100,9 @@ class LineBindingShortcode {
 		// 註冊並載入 JavaScript
 		\wp_enqueue_script(
 			'buygo-line-binding-widget',
-			\plugin_dir_url( BuygoLineNotify_PLUGIN_FILE ) . 'assets/js/fluentcart-line-integration-standalone.js',
+			BuygoLineNotify_PLUGIN_URL . 'assets/js/fluentcart-line-integration-standalone.js',
 			[],
-			BuygoLineNotify_VERSION,
+			BuygoLineNotify_PLUGIN_VERSION,
 			true
 		);
 

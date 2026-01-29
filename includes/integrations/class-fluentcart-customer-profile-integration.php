@@ -59,9 +59,9 @@ class FluentCartCustomerProfileIntegration {
 		// 註冊 JavaScript（使用純 JS 版本）
 		\wp_enqueue_script(
 			'buygo-line-fluentcart-integration',
-			\plugin_dir_url( BuygoLineNotify_PLUGIN_FILE ) . 'assets/js/fluentcart-line-integration-standalone.js',
+			BuygoLineNotify_PLUGIN_URL . 'assets/js/fluentcart-line-integration-standalone.js',
 			[],
-			BuygoLineNotify_VERSION,
+			BuygoLineNotify_PLUGIN_VERSION,
 			true
 		);
 
