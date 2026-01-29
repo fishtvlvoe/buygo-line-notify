@@ -21,6 +21,9 @@ final class SettingsPage
 
         // AJAX handler for creating register flow page
         \add_action('wp_ajax_buygo_line_create_register_page', [self::class, 'ajax_create_register_page']);
+
+        // AJAX handler for clearing avatar cache
+        \add_action('wp_ajax_buygo_line_clear_avatar_cache', [self::class, 'ajax_clear_avatar_cache']);
     }
 
     /**
@@ -137,6 +140,17 @@ final class SettingsPage
         $register_flow_page = isset($_POST['register_flow_page']) ? \absint($_POST['register_flow_page']) : 0;
         \update_option('buygo_line_register_flow_page', $register_flow_page);
 
+        // 儲存 Profile Sync 設定
+        \BuygoLineNotify\Services\SettingsService::set('sync_on_login', isset($_POST['buygo_line_sync_on_login']) ? '1' : '');
+
+        // 驗證並儲存衝突策略
+        $conflict_strategy = isset($_POST['buygo_line_conflict_strategy']) ? \sanitize_text_field($_POST['buygo_line_conflict_strategy']) : 'line_priority';
+        $valid_strategies = ['line_priority', 'wordpress_priority', 'manual'];
+        if (!\in_array($conflict_strategy, $valid_strategies, true)) {
+            $conflict_strategy = 'line_priority';
+        }
+        \BuygoLineNotify\Services\SettingsService::set('conflict_strategy', $conflict_strategy);
+
         return '<div class="notice notice-success"><p>設定已儲存。</p></div>';
     }
 
@@ -176,5 +190,24 @@ final class SettingsPage
             'edit_url'   => \get_edit_post_link($page_id, 'raw'),
             'view_url'   => \get_permalink($page_id),
         ]);
+    }
+
+    /**
+     * AJAX: 清除所有用戶的頭像快取
+     */
+    public static function ajax_clear_avatar_cache(): void
+    {
+        // 驗證 nonce
+        \check_ajax_referer('buygo_line_clear_avatar_cache', 'nonce');
+
+        // 驗證權限
+        if (!\current_user_can('manage_options')) {
+            \wp_send_json_error(['message' => '權限不足']);
+        }
+
+        // 清除快取
+        $count = \BuygoLineNotify\Services\AvatarService::clearAllAvatarCache();
+
+        \wp_send_json_success(['count' => $count]);
     }
 }
