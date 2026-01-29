@@ -63,6 +63,7 @@ class WebhookHandler {
 	private function handle_event( array $event ): void {
 		$event_type = $event['type'] ?? '';
 		$line_uid = $event['source']['userId'] ?? '';
+		$webhook_event_id = $event['webhookEventId'] ?? null;
 
 		// 取得對應的 WordPress User ID（如果已綁定）
 		$user_id = null;
@@ -72,6 +73,9 @@ class WebhookHandler {
 				$user_id = $user->ID;
 			}
 		}
+
+		// 記錄 Webhook 事件（Debug 工具）
+		Logger::logWebhookEvent( $event_type, $line_uid, $user_id, $webhook_event_id );
 
 		// 觸發通用 Hook（所有事件類型）
 		// 參數：$event, $event_type, $line_uid, $user_id

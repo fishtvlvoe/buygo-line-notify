@@ -20,7 +20,7 @@ class Database {
     /**
      * 資料庫版本
      */
-    const DB_VERSION = '2.0.0';
+    const DB_VERSION = '2.1.0';
 
     /**
      * 初始化資料庫
@@ -33,6 +33,12 @@ class Database {
         if (version_compare($current_version, self::DB_VERSION, '<')) {
             self::create_tables();
             self::create_line_users_table();
+
+            // 版本 2.1.0: 新增 Debug 資料表
+            if (version_compare($current_version, '2.1.0', '<')) {
+                self::create_webhook_logs_table();
+                self::create_message_logs_table();
+            }
 
             // 版本特定遷移
             if (version_compare($current_version, '2.0.0', '<')) {
@@ -216,6 +222,69 @@ class Database {
     }
 
     /**
+     * 建立 wp_buygo_webhook_logs 資料表
+     *
+     * 記錄 Webhook 事件（不包含業務邏輯資料）
+     */
+    public static function create_webhook_logs_table(): void {
+        global $wpdb;
+
+        require_once ABSPATH . 'wp-admin/includes/upgrade.php';
+
+        $charset_collate = $wpdb->get_charset_collate();
+        $table_name = $wpdb->prefix . 'buygo_webhook_logs';
+
+        $sql = "CREATE TABLE {$table_name} (
+            id bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT,
+            event_type varchar(50) NOT NULL,
+            line_uid varchar(100),
+            user_id bigint(20) UNSIGNED,
+            webhook_event_id varchar(100),
+            received_at datetime DEFAULT CURRENT_TIMESTAMP,
+            PRIMARY KEY  (id),
+            KEY idx_event_type (event_type),
+            KEY idx_line_uid (line_uid),
+            KEY idx_user_id (user_id),
+            KEY idx_received_at (received_at),
+            KEY idx_webhook_event_id (webhook_event_id)
+        ) {$charset_collate};";
+
+        dbDelta($sql);
+    }
+
+    /**
+     * 建立 wp_buygo_message_logs 資料表
+     *
+     * 記錄訊息發送狀態（不包含訊息內容）
+     */
+    public static function create_message_logs_table(): void {
+        global $wpdb;
+
+        require_once ABSPATH . 'wp-admin/includes/upgrade.php';
+
+        $charset_collate = $wpdb->get_charset_collate();
+        $table_name = $wpdb->prefix . 'buygo_message_logs';
+
+        $sql = "CREATE TABLE {$table_name} (
+            id bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT,
+            user_id bigint(20) UNSIGNED NOT NULL,
+            line_uid varchar(100) NOT NULL,
+            message_type varchar(20) NOT NULL,
+            status varchar(20) NOT NULL DEFAULT 'pending',
+            error_message text,
+            sent_at datetime DEFAULT CURRENT_TIMESTAMP,
+            PRIMARY KEY  (id),
+            KEY idx_user_id (user_id),
+            KEY idx_line_uid (line_uid),
+            KEY idx_message_type (message_type),
+            KEY idx_status (status),
+            KEY idx_sent_at (sent_at)
+        ) {$charset_collate};";
+
+        dbDelta($sql);
+    }
+
+    /**
      * 取得遷移狀態
      *
      * @return array 遷移狀態資訊
@@ -237,6 +306,13 @@ class Database {
         // 刪除新表
         $new_table = $wpdb->prefix . 'buygo_line_users';
         $wpdb->query("DROP TABLE IF EXISTS {$new_table}");
+
+        // 刪除 Debug 資料表
+        $webhook_logs_table = $wpdb->prefix . 'buygo_webhook_logs';
+        $wpdb->query("DROP TABLE IF EXISTS {$webhook_logs_table}");
+
+        $message_logs_table = $wpdb->prefix . 'buygo_message_logs';
+        $wpdb->query("DROP TABLE IF EXISTS {$message_logs_table}");
 
         // 刪除所有相關 options
         delete_option('buygo_line_notify_db_version'); // 舊版本 key（保留向後相容）

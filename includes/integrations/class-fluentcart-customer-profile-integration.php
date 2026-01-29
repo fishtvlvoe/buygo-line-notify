@@ -24,11 +24,9 @@ class FluentCartCustomerProfileIntegration {
 	 * 註冊 hooks
 	 */
 	public static function register_hooks(): void {
-		// FluentCart 客戶檔案頁面 hooks
-		// 嘗試多個可能的 hook 點
-		\add_action( 'fluent_cart/customer_profile/before_content', [ __CLASS__, 'render_line_binding_section' ], 10 );
-		\add_action( 'fluent_cart/customer_profile/after_content', [ __CLASS__, 'render_line_binding_section' ], 10 );
-		\add_action( 'fluent_cart_customer_profile_sidebar', [ __CLASS__, 'render_line_binding_section' ], 10 );
+		// 在 FluentCart 客戶檔案頁面的 Vue app 之後注入 LINE 綁定區塊
+		// 使用 fluent_cart/customer_app hook
+		\add_action( 'fluent_cart/customer_app', [ __CLASS__, 'render_line_binding_section' ], 100 );
 
 		// 載入 JavaScript 和 CSS
 		\add_action( 'wp_enqueue_scripts', [ __CLASS__, 'enqueue_assets' ] );

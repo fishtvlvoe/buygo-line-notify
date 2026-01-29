@@ -28,6 +28,9 @@ final class SettingsPage
         // AJAX handler for unbinding LINE account
         \add_action('wp_ajax_buygo_line_unbind', [self::class, 'ajax_unbind']);
 
+        // AJAX handler for testing binding status API
+        \add_action('wp_ajax_buygo_line_test_api', [self::class, 'ajax_test_api']);
+
         // AJAX handlers for developer tools
         \add_action('wp_ajax_buygo_line_get_users', [self::class, 'ajax_get_line_users']);
         \add_action('wp_ajax_buygo_line_delete_user', [self::class, 'ajax_delete_user']);
@@ -95,6 +98,9 @@ final class SettingsPage
             \wp_die(\__('您沒有權限訪問此頁面。', 'buygo-line-notify'));
         }
 
+        // 取得當前 tab
+        $current_tab = isset($_GET['tab']) ? \sanitize_text_field($_GET['tab']) : 'settings';
+
         // 處理表單提交
         $message = '';
         if (isset($_POST['buygo_line_settings_submit'])) {
@@ -106,6 +112,11 @@ final class SettingsPage
 
         // 產生 Webhook URL
         $webhook_url = \rest_url('buygo-line-notify/v1/webhook');
+
+        // 取得所有 LINE 綁定（用於綁定管理 tab）
+        global $wpdb;
+        $table_name = $wpdb->prefix . 'buygo_line_users';
+        $bindings = $wpdb->get_results("SELECT * FROM {$table_name} ORDER BY id DESC", ARRAY_A);
 
         // 載入視圖檔案
         include BuygoLineNotify_PLUGIN_DIR . 'includes/admin/views/settings-page.php';
@@ -273,6 +284,63 @@ final class SettingsPage
         );
 
         \wp_send_json_success(['message' => '已成功解除 LINE 綁定']);
+    }
+
+    /**
+     * AJAX: 測試 binding status API（模擬該用戶的 API 呼叫）
+     */
+    public static function ajax_test_api(): void
+    {
+        // 驗證 nonce
+        \check_ajax_referer('buygo_line_test_api', '_wpnonce', false);
+
+        // 驗證權限
+        if (!\current_user_can('manage_options')) {
+            \wp_send_json_error(['message' => '權限不足']);
+        }
+
+        $user_id = isset($_POST['user_id']) ? (int) $_POST['user_id'] : 0;
+
+        if (!$user_id) {
+            \wp_send_json_error(['message' => '無效的用戶 ID']);
+        }
+
+        // 檢查是否已綁定 LINE
+        $is_linked = \BuygoLineNotify\Services\LineUserService::isUserLinked($user_id);
+
+        if (!$is_linked) {
+            \wp_send_json_success([
+                'success'   => true,
+                'is_linked' => false,
+                'message'   => '未綁定 LINE',
+            ]);
+            return;
+        }
+
+        // 取得綁定資料
+        $line_data = \BuygoLineNotify\Services\LineUserService::getUser($user_id);
+
+        if (!$line_data) {
+            \wp_send_json_success([
+                'success'   => true,
+                'is_linked' => false,
+                'message'   => '綁定資料不存在',
+            ]);
+            return;
+        }
+
+        // 取得 LINE profile（頭像、名稱）
+        $display_name = \get_user_meta($user_id, 'buygo_line_display_name', true);
+        $avatar_url   = \get_user_meta($user_id, 'buygo_line_avatar_url', true);
+
+        \wp_send_json_success([
+            'success'      => true,
+            'is_linked'    => true,
+            'line_uid'     => $line_data['line_uid'] ?? '',
+            'display_name' => $display_name ?: '未知',
+            'avatar_url'   => $avatar_url ?: '',
+            'linked_at'    => $line_data['link_date'] ?? '',
+        ]);
     }
 
     /**

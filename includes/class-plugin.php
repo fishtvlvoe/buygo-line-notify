@@ -82,6 +82,10 @@ final class Plugin
         \add_action('rest_api_init', function () {
             $fluentcart_api = new \BuygoLineNotify\Api\FluentCartIntegrationAPI();
             $fluentcart_api->register_routes();
+
+            // Debug API
+            $debug_api = new \BuygoLineNotify\Api\DebugAPI();
+            $debug_api->register_routes();
         });
 
         // 註冊 Cron handler（非 FastCGI 環境的背景處理）
@@ -92,6 +96,7 @@ final class Plugin
 
         if (\is_admin()) {
             SettingsPage::register_hooks();
+            \BuygoLineNotify\Admin\DebugPage::register_hooks();
         }
     }
 
@@ -168,6 +173,7 @@ final class Plugin
         include_once BuygoLineNotify_PLUGIN_DIR . 'includes/api/class-webhook-api.php';
         include_once BuygoLineNotify_PLUGIN_DIR . 'includes/api/class-login-api.php';
         include_once BuygoLineNotify_PLUGIN_DIR . 'includes/api/class-fluentcart-integration-api.php';
+        include_once BuygoLineNotify_PLUGIN_DIR . 'includes/api/class-debug-api.php';
 
         // 載入 Integration 類別
         include_once BuygoLineNotify_PLUGIN_DIR . 'includes/integrations/class-fluentcart-customer-profile-integration.php';
@@ -181,6 +187,7 @@ final class Plugin
         if (\is_admin()) {
             include_once BuygoLineNotify_PLUGIN_DIR . 'includes/admin/class-settings-page.php';
             include_once BuygoLineNotify_PLUGIN_DIR . 'includes/admin/class-user-list-column.php';
+            include_once BuygoLineNotify_PLUGIN_DIR . 'includes/admin/class-debug-page.php';
         }
     }
 

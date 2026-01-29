@@ -118,7 +118,8 @@
 					method: 'GET',
 					credentials: 'same-origin',
 					headers: {
-						'Content-Type': 'application/json'
+						'Content-Type': 'application/json',
+						'X-WP-Nonce': window.buygoLineFluentCart?.nonce || ''
 					}
 				});
 
@@ -160,7 +161,8 @@
 						method: 'GET',
 						credentials: 'same-origin',
 						headers: {
-							'Content-Type': 'application/json'
+							'Content-Type': 'application/json',
+							'X-WP-Nonce': window.buygoLineFluentCart?.nonce || ''
 						}
 					}
 				);
@@ -197,7 +199,8 @@
 					method: 'POST',
 					credentials: 'same-origin',
 					headers: {
-						'Content-Type': 'application/json'
+						'Content-Type': 'application/json',
+						'X-WP-Nonce': window.buygoLineFluentCart?.nonce || ''
 					}
 				});
 

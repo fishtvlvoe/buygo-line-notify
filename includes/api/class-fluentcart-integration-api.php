@@ -158,7 +158,8 @@ class FluentCartIntegrationAPI {
 
 		try {
 			// 產生 authorize URL（包含 state）
-			$authorize_url = \BuygoLineNotify\Services\LoginService::get_authorize_url(
+			$login_service = new \BuygoLineNotify\Services\LoginService();
+			$authorize_url = $login_service->get_authorize_url(
 				$redirect_url,
 				$user_id  // 傳入 user_id 表示這是綁定流程
 			);

@@ -65,7 +65,7 @@ class MessagingService
         ];
 
         // 發送訊息
-        return self::pushMessage($line_uid, $messages);
+        return self::pushMessage($line_uid, $messages, $user_id, 'text');
     }
 
     /**
@@ -108,7 +108,7 @@ class MessagingService
         ];
 
         // 發送訊息
-        return self::pushMessage($line_uid, $messages);
+        return self::pushMessage($line_uid, $messages, $user_id, 'flex');
     }
 
     /**
@@ -157,26 +157,33 @@ class MessagingService
         ];
 
         // 發送訊息
-        return self::pushMessage($line_uid, $messages);
+        return self::pushMessage($line_uid, $messages, $user_id, 'image');
     }
 
     /**
      * 發送 Push Message 到 LINE
      *
-     * @param string $line_uid LINE User ID
-     * @param array  $messages 訊息陣列
+     * @param string $line_uid     LINE User ID
+     * @param array  $messages     訊息陣列
+     * @param int    $user_id      WordPress User ID (for logging)
+     * @param string $message_type 訊息類型 (text, flex, image)
      * @return array|WP_Error 成功返回 ['success' => true]，失敗返回 WP_Error
      */
-    private static function pushMessage(string $line_uid, array $messages)
+    private static function pushMessage(string $line_uid, array $messages, int $user_id, string $message_type)
     {
         // 取得 Channel Access Token
         $access_token = SettingsService::get('channel_access_token');
         if (empty($access_token)) {
-            return new \WP_Error(
+            $error = new \WP_Error(
                 'missing_access_token',
                 'Channel Access Token 未設定',
                 ['line_uid' => $line_uid]
             );
+
+            // 記錄失敗
+            Logger::logMessageSent($user_id, $line_uid, $message_type, 'failed', $error->get_error_message());
+
+            return $error;
         }
 
         // 組裝 API 請求
@@ -196,8 +203,13 @@ class MessagingService
 
         // 檢查回應
         if (is_wp_error($response)) {
+            // 記錄失敗
+            Logger::logMessageSent($user_id, $line_uid, $message_type, 'failed', $response->get_error_message());
             return $response;
         }
+
+        // 記錄成功
+        Logger::logMessageSent($user_id, $line_uid, $message_type, 'success');
 
         return ['success' => true];
     }
