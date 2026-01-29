@@ -12,17 +12,17 @@ See: .planning/PROJECT.md (updated 2026-01-29)
 
 Milestone: v0.2 (LINE Login 完整重構)
 Phase: 12 of 15 (Profile Sync 與 Avatar 整合)
-Plan: 03 of 4
-Status: In progress (3/4 plans complete)
-Last activity: 2026-01-29 — Completed Phase 12-03: ProfileSyncService 整合到 UserService 和 Login_Handler
+Plan: 04 of 4
+Status: Phase complete (4/4 plans complete, Wave 2 完成)
+Last activity: 2026-01-29 — Completed Phase 12-04: Profile Sync 後台設定 UI
 
-Progress: [█████████████░░░░░░░] 67% overall (2/7 v0.1 phases completed, 4/8 v0.2 phases complete, Phase 12 in progress)
+Progress: [█████████████░░░░░░░] 68% overall (2/7 v0.1 phases completed, 4/8 v0.2 phases complete, Phase 12 Wave 2 complete)
 
 ## Performance Metrics
 
-- Total plans completed: 20 (Phase 1: 4 plans, Phase 2: 2 plans, Phase 8: 2 plans, Phase 9: 3 plans, Phase 10: 3 plans, Phase 11: 1 plan, Phase 12: 3 plans, Phase 14: 2 plans)
+- Total plans completed: 21 (Phase 1: 4 plans, Phase 2: 2 plans, Phase 8: 2 plans, Phase 9: 3 plans, Phase 10: 3 plans, Phase 11: 1 plan, Phase 12: 4 plans, Phase 14: 2 plans)
 - Average duration: ~2.6 min per plan
-- Total execution time: ~52 min (v0.1 + v0.2)
+- Total execution time: ~54 min (v0.1 + v0.2)
 
 **By Milestone:**
 
@@ -42,7 +42,7 @@ Progress: [█████████████░░░░░░░] 67% ove
 - Phase 9: ✅ 標準 WordPress URL 機制（URL + NSL-01: 5 需求完成）
 - Phase 10: ✅ Register Flow Page 系統（NSL + RFP: 9 需求完成 - 3/3 plans complete）
 - Phase 11: 🔄 完整註冊/登入/綁定流程（FLOW + STORAGE: 3/6 需求完成 - 1/TBD plans complete）
-- Phase 12: 🔄 Profile Sync 與 Avatar 整合（SYNC + AVATAR: 6/10 需求完成 - 3/4 plans complete）
+- Phase 12: 🔄 Profile Sync 與 Avatar 整合（SYNC + AVATAR: 8/10 需求完成 - 4/4 plans complete, Wave 2 完成）
 - Phase 13: 前台整合（FRONTEND: 5 需求）
 - Phase 14: 後台管理（BACKEND: 5 需求）
 - Phase 15: 測試與文件（TEST + DOC: 7 需求）
@@ -50,6 +50,7 @@ Progress: [█████████████░░░░░░░] 67% ove
 **Total v0.2 Requirements: 49**
 
 **Recent Activity:**
+- 2026-01-29: Phase 12-04 completed（Profile Sync 後台設定 UI - SYNC-04: sync_on_login, conflict_strategy, 清除快取按鈕）
 - 2026-01-29: Phase 12-03 completed（ProfileSyncService 整合到 UserService 和 Login_Handler - SYNC-01, SYNC-02, SYNC-03）
 - 2026-01-29: Phase 12-02 completed（AvatarService 實作 + get_avatar_url filter hook - AVATAR-01, AVATAR-02, AVATAR-03）
 - 2026-01-29: Phase 12-01 completed（ProfileSyncService 核心服務類別 - SYNC-01: syncProfile + shouldUpdateField + logSync）
@@ -60,7 +61,7 @@ Progress: [█████████████░░░░░░░] 67% ove
 - 2026-01-29: Phase 9 completed（標準 WordPress URL 機制 - 3 plans, 5 requirements）
 - 2026-01-29: Phase 8 completed（資料表架構與查詢 API - 2 plans, 3 requirements）
 
-*Updated: 2026-01-29 after Phase 12-03 completion*
+*Updated: 2026-01-29 after Phase 12-04 completion (Wave 2 完成)*
 
 ## Accumulated Context
 
