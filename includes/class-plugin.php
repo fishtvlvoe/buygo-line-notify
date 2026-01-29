@@ -137,6 +137,9 @@ final class Plugin
         // MessagingService (Facade API) 依賴 LineUserService，必須在其之後載入
         include_once BuygoLineNotify_PLUGIN_DIR . 'includes/services/class-messaging-service.php';
 
+        // ImageService 依賴 SettingsService，必須在其之後載入
+        include_once BuygoLineNotify_PLUGIN_DIR . 'includes/services/class-image-service.php';
+
         // ProfileSyncService 依賴 SettingsService，必須在其之後載入
         include_once BuygoLineNotify_PLUGIN_DIR . 'includes/services/class-profile-sync-service.php';
 
