@@ -22,10 +22,10 @@ $current_user = wp_get_current_user();
 $user_id = $current_user->ID;
 
 // 檢查是否已綁定 LINE
-$existing_line_uid = \BuyGo_Line_Notify\Services\LineUserService::getLineUidByUserId( $user_id );
+$existing_line_uid = \BuygoLineNotify\Services\LineUserService::getLineUidByUserId( $user_id );
 
 // 產生綁定 URL
-$login_service = new \BuyGo_Line_Notify\Services\LoginService();
+$login_service = new \BuygoLineNotify\Services\LoginService();
 $redirect_url = home_url( '/my-account/' ); // 綁定後導向
 $authorize_url = $login_service->get_authorize_url( $redirect_url, $user_id );
 
