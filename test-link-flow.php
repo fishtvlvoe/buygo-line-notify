@@ -10,8 +10,8 @@
  * 訪問路徑: https://test.buygo.me/wp-content/plugins/buygo-line-notify/test-link-flow.php
  */
 
-// 載入 WordPress
-require_once dirname( __FILE__, 4 ) . '/wp-load.php';
+// 載入 WordPress（使用絕對路徑）
+require_once '/Users/fishtv/Local Sites/buygo/app/public/wp-load.php';
 
 // 確保已登入
 if ( ! is_user_logged_in() ) {
