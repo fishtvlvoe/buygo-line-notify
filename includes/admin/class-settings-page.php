@@ -25,6 +25,9 @@ final class SettingsPage
         // AJAX handler for clearing avatar cache
         \add_action('wp_ajax_buygo_line_clear_avatar_cache', [self::class, 'ajax_clear_avatar_cache']);
 
+        // AJAX handler for unbinding LINE account
+        \add_action('wp_ajax_buygo_line_unbind', [self::class, 'ajax_unbind']);
+
         // AJAX handlers for developer tools
         \add_action('wp_ajax_buygo_line_get_users', [self::class, 'ajax_get_line_users']);
         \add_action('wp_ajax_buygo_line_delete_user', [self::class, 'ajax_delete_user']);
@@ -215,6 +218,61 @@ final class SettingsPage
         $count = \BuygoLineNotify\Services\AvatarService::clearAllAvatarCache();
 
         \wp_send_json_success(['count' => $count]);
+    }
+
+    /**
+     * AJAX: 解除 LINE 綁定
+     */
+    public static function ajax_unbind(): void
+    {
+        // 驗證 nonce
+        \check_ajax_referer('buygo_line_unbind', '_ajax_nonce');
+
+        // 取得 user_id 參數
+        $user_id = isset($_POST['user_id']) ? (int) $_POST['user_id'] : 0;
+
+        if (!$user_id) {
+            \wp_send_json_error(['message' => '無效的用戶 ID']);
+        }
+
+        // 權限檢查
+        $current_user_id = \get_current_user_id();
+        if (!$current_user_id) {
+            \wp_send_json_error(['message' => '您必須登入才能執行此操作']);
+        }
+
+        // 一般用戶只能解除自己的綁定，管理員可以解除任何用戶的綁定
+        if ($user_id !== $current_user_id && !\current_user_can('manage_options')) {
+            \wp_send_json_error(['message' => '權限不足：您只能解除自己的 LINE 綁定']);
+        }
+
+        // 檢查用戶是否存在
+        $user = \get_user_by('id', $user_id);
+        if (!$user) {
+            \wp_send_json_error(['message' => '用戶不存在']);
+        }
+
+        // 呼叫 LineUserService 解除綁定
+        $result = \BuygoLineNotify\Services\LineUserService::unlinkUser($user_id);
+
+        if (!$result) {
+            \wp_send_json_error(['message' => '解除綁定失敗，請稍後再試']);
+        }
+
+        // 清除相關 user_meta（頭像和同步日誌）
+        \delete_user_meta($user_id, 'buygo_line_avatar_url');
+        \delete_user_meta($user_id, 'buygo_line_avatar_updated');
+        \delete_option("buygo_line_sync_log_{$user_id}");
+        \delete_option("buygo_line_conflict_log_{$user_id}");
+
+        // 記錄日誌
+        \BuygoLineNotify\Logger::get_instance()->log(
+            "用戶 {$user_id} ({$user->user_login}) 已成功解除 LINE 綁定",
+            'INFO',
+            ['action' => 'unbind', 'user_id' => $user_id, 'operator_id' => $current_user_id]
+        );
+
+        \wp_send_json_success(['message' => '已成功解除 LINE 綁定']);
     }
 
     /**
