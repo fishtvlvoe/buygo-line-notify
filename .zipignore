@@ -1,0 +1,55 @@
+# Git 相關
+.git
+.gitignore
+.gitattributes
+
+# 開發工具
+.vscode
+.idea
+.DS_Store
+*.swp
+*.swo
+*~
+
+# Composer 開發相關
+composer.json
+composer.lock
+vendor/
+
+# 測試相關
+tests/
+phpunit.xml
+phpunit-unit.xml
+.phpunit.cache/
+.phpunit.result.cache
+
+# 測試腳本
+test-*.php
+check-*.php
+list-*.php
+manual-*.php
+flush-*.php
+mark-*.php
+verify-*.php
+
+# 計畫文件
+.planning/
+
+# 開發文件
+TESTING.md
+CONTEXT.md
+PROJECT.md
+REQUIREMENTS.md
+STATE.md
+ROADMAP.md
+
+# Node.js (如果有)
+node_modules/
+package.json
+package-lock.json
+
+# 其他
+*.log
+.env
+.env.local
+coverage/
