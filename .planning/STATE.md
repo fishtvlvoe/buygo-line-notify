@@ -11,25 +11,25 @@ See: .planning/PROJECT.md (updated 2026-01-29)
 ## Current Position
 
 Milestone: v0.2 (LINE Login 完整重構)
-Phase: 12 of 15 (Profile Sync 與 Avatar 整合)
+Phase: 13 of 15 (前台整合)
 Plan: 04 of 4
-Status: Phase complete (4/4 plans complete, Wave 2 完成)
-Last activity: 2026-01-29 — Completed Phase 12-04: Profile Sync 後台設定 UI
+Status: Phase complete (4/4 plans complete, all waves 完成)
+Last activity: 2026-01-29 — Completed Phase 13: 前台整合（所有 FRONTEND 需求完成）
 
-Progress: [█████████████░░░░░░░] 68% overall (2/7 v0.1 phases completed, 4/8 v0.2 phases complete, Phase 12 Wave 2 complete)
+Progress: [██████████████░░░░░░] 75% overall (2/7 v0.1 phases completed, 5/8 v0.2 phases complete, Phase 13 complete)
 
 ## Performance Metrics
 
-- Total plans completed: 21 (Phase 1: 4 plans, Phase 2: 2 plans, Phase 8: 2 plans, Phase 9: 3 plans, Phase 10: 3 plans, Phase 11: 1 plan, Phase 12: 4 plans, Phase 14: 2 plans)
-- Average duration: ~2.6 min per plan
-- Total execution time: ~54 min (v0.1 + v0.2)
+- Total plans completed: 25 (Phase 1: 4 plans, Phase 2: 2 plans, Phase 8: 2 plans, Phase 9: 3 plans, Phase 10: 3 plans, Phase 11: 1 plan, Phase 12: 4 plans, Phase 13: 4 plans, Phase 14: 2 plans)
+- Average duration: ~2.5 min per plan
+- Total execution time: ~62 min (v0.1 + v0.2)
 
 **By Milestone:**
 
 | Milestone | Phases | Plans | Requirements | Completion |
 |-----------|--------|-------|--------------|------------|
 | v0.1 基礎架構 | 2/7 | 6/TBD | 24/~40 | Partial (Phase 1-2 完成) |
-| v0.2 LINE Login 重構 | 4/8 | 10/TBD | 16/49 | Phase 8-10 complete, Phase 12 in progress |
+| v0.2 LINE Login 重構 | 5/8 | 14/TBD | 21/49 | Phase 8-10, 12-13 complete |
 | v0.3 進階功能 | 0/TBD | 0/TBD | 0/TBD | Not planned |
 
 **v0.1 Milestone Summary (Partial Complete):**
@@ -42,26 +42,24 @@ Progress: [█████████████░░░░░░░] 68% ove
 - Phase 9: ✅ 標準 WordPress URL 機制（URL + NSL-01: 5 需求完成）
 - Phase 10: ✅ Register Flow Page 系統（NSL + RFP: 9 需求完成 - 3/3 plans complete）
 - Phase 11: 🔄 完整註冊/登入/綁定流程（FLOW + STORAGE: 3/6 需求完成 - 1/TBD plans complete）
-- Phase 12: 🔄 Profile Sync 與 Avatar 整合（SYNC + AVATAR: 8/10 需求完成 - 4/4 plans complete, Wave 2 完成）
-- Phase 13: 前台整合（FRONTEND: 5 需求）
-- Phase 14: 後台管理（BACKEND: 5 需求）
-- Phase 15: 測試與文件（TEST + DOC: 7 需求）
+- Phase 12: ✅ Profile Sync 與 Avatar 整合（SYNC + AVATAR: 8/8 需求完成 - 4/4 plans complete）
+- Phase 13: ✅ 前台整合（FRONTEND: 5/5 需求完成 - 4/4 plans complete）
+- Phase 14: 🔄 後台管理（BACKEND: 2/5 需求完成 - 2/TBD plans complete）
+- Phase 15: LINE Login 系統（由另一個 Claude 負責，已完成 StateManager + LoginService）
 
 **Total v0.2 Requirements: 49**
 
 **Recent Activity:**
-- 2026-01-29: Phase 12-04 completed（Profile Sync 後台設定 UI - SYNC-04: sync_on_login, conflict_strategy, 清除快取按鈕）
-- 2026-01-29: Phase 12-03 completed（ProfileSyncService 整合到 UserService 和 Login_Handler - SYNC-01, SYNC-02, SYNC-03）
-- 2026-01-29: Phase 12-02 completed（AvatarService 實作 + get_avatar_url filter hook - AVATAR-01, AVATAR-02, AVATAR-03）
-- 2026-01-29: Phase 12-01 completed（ProfileSyncService 核心服務類別 - SYNC-01: syncProfile + shouldUpdateField + logSync）
-- 2026-01-29: Phase 10 completed（Register Flow Page 系統 - 3 plans, 9 requirements, checkpoint 驗證全部通過）
-- 2026-01-29: Phase 10 Plan 03 checkpoint verification（4 test cases: Register Flow Page, Fallback mode, Auto-link, Settings page）
-- 2026-01-29: Phase 10 Plan 02 completed（表單提交處理 + Auto-link 機制）
-- 2026-01-28: Phase 10 Plan 01 completed（Register Flow Shortcode 核心機制）
+- 2026-01-29: Phase 13 completed（前台整合 - 4 plans, 5 requirements）
+  - Wave 1: AccountIntegrationService（綁定狀態顯示）+ ajax_unbind（解除綁定）
+  - Wave 2: LoginButtonShortcode（[buygo_line_login] shortcode）
+  - Wave 3: 驗證檢查清單和 Phase Summary
+- 2026-01-29: Phase 12 completed（Profile Sync 與 Avatar 整合 - 4 plans, 8 requirements）
+- 2026-01-29: Phase 10 completed（Register Flow Page 系統 - 3 plans, 9 requirements）
 - 2026-01-29: Phase 9 completed（標準 WordPress URL 機制 - 3 plans, 5 requirements）
 - 2026-01-29: Phase 8 completed（資料表架構與查詢 API - 2 plans, 3 requirements）
 
-*Updated: 2026-01-29 after Phase 12-04 completion (Wave 2 完成)*
+*Updated: 2026-01-29 after Phase 13 completion (所有 FRONTEND 需求完成)*
 
 ## Accumulated Context
 
@@ -77,6 +75,12 @@ Recent decisions affecting current work:
 - **NSLContinuePageRenderException**: 完美處理 LINE 瀏覽器問題
 - **Register Flow Page + Shortcode**: 靈活整合、可放任何頁面
 - **LIFF 延後到 v0.3**: Nextend 架構已足夠,先驗證再決定
+
+**Phase 13 Implementation Decisions:**
+- **使用 AccountIntegrationService 統一管理綁定狀態顯示**: 集中管理所有前台綁定狀態 UI，避免邏輯分散
+- **解除綁定使用 AJAX 而非表單提交**: 更好的使用者體驗（不需要頁面跳轉），可以顯示載入中狀態
+- **Shortcode 重用 LoginButtonService 樣式**: 確保所有 LINE 登入按鈕樣式一致，符合 LINE 官方設計規範
+- **權限檢查：一般用戶只能解除自己的綁定**: 防止用戶解除他人綁定，管理員可解除任何用戶綁定
 
 **Phase 12 Implementation Decisions:**
 - **Avatar 快取時間設定為 7 天**: 避免阻塞頁面渲染，且不需 access_token 即可顯示頭像
