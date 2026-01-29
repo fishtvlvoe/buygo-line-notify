@@ -399,6 +399,20 @@ class Login_Handler {
 		// 設定 auth cookie
 		wp_set_auth_cookie( $user_id, true );
 
+		// Profile Sync（登入時，依設定決定是否同步）
+		$line_profile = $state_data['line_profile'] ?? [];
+		if ( ! empty( $line_profile ) ) {
+			Services\ProfileSyncService::syncProfile(
+				$user_id,
+				array(
+					'displayName' => $line_profile['displayName'] ?? '',
+					'email'       => $line_profile['email'] ?? '',
+					'pictureUrl'  => $line_profile['pictureUrl'] ?? '',
+				),
+				'login'
+			);
+		}
+
 		Logger::get_instance()->log(
 			'info',
 			array(
@@ -941,6 +955,17 @@ class Login_Handler {
 		if ( ! empty( $profile['pictureUrl'] ) ) {
 			update_user_meta( $current_user_id, 'buygo_line_avatar_url', $profile['pictureUrl'] );
 		}
+
+		// Profile Sync（綁定時依策略同步）
+		Services\ProfileSyncService::syncProfile(
+			$current_user_id,
+			array(
+				'displayName' => $profile['displayName'] ?? '',
+				'email'       => $profile['email'] ?? '',
+				'pictureUrl'  => $profile['pictureUrl'] ?? '',
+			),
+			'link'
+		);
 
 		Logger::get_instance()->log(
 			'info',
