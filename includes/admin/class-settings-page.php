@@ -24,6 +24,11 @@ final class SettingsPage
 
         // AJAX handler for clearing avatar cache
         \add_action('wp_ajax_buygo_line_clear_avatar_cache', [self::class, 'ajax_clear_avatar_cache']);
+
+        // AJAX handlers for developer tools
+        \add_action('wp_ajax_buygo_line_get_users', [self::class, 'ajax_get_line_users']);
+        \add_action('wp_ajax_buygo_line_delete_user', [self::class, 'ajax_delete_user']);
+        \add_action('wp_ajax_buygo_line_delete_all_test_users', [self::class, 'ajax_delete_all_test_users']);
     }
 
     /**
@@ -209,5 +214,159 @@ final class SettingsPage
         $count = \BuygoLineNotify\Services\AvatarService::clearAllAvatarCache();
 
         \wp_send_json_success(['count' => $count]);
+    }
+
+    /**
+     * AJAX: 取得所有已綁定 LINE 的用戶列表
+     */
+    public static function ajax_get_line_users(): void
+    {
+        // 驗證 nonce
+        \check_ajax_referer('buygo_line_dev_tools', 'nonce');
+
+        // 驗證權限
+        if (!\current_user_can('manage_options')) {
+            \wp_send_json_error(['message' => '權限不足']);
+        }
+
+        global $wpdb;
+        $bindings_table = $wpdb->prefix . 'buygo_line_users';
+
+        // 取得所有已綁定 LINE 的用戶
+        $results = $wpdb->get_results(
+            "SELECT user_id, line_uid FROM {$bindings_table} ORDER BY user_id ASC",
+            ARRAY_A
+        );
+
+        $users = [];
+        foreach ($results as $row) {
+            $user = \get_user_by('id', $row['user_id']);
+            if ($user) {
+                $users[] = [
+                    'ID'           => $user->ID,
+                    'display_name' => $user->display_name,
+                    'user_email'   => $user->user_email,
+                    'line_uid'     => $row['line_uid'],
+                    'roles'        => $user->roles,
+                ];
+            }
+        }
+
+        \wp_send_json_success(['users' => $users]);
+    }
+
+    /**
+     * AJAX: 刪除單一用戶（包含 LINE 綁定和 WordPress 帳號）
+     */
+    public static function ajax_delete_user(): void
+    {
+        // 驗證 nonce
+        \check_ajax_referer('buygo_line_dev_tools', 'nonce');
+
+        // 驗證權限
+        if (!\current_user_can('manage_options')) {
+            \wp_send_json_error(['message' => '權限不足']);
+        }
+
+        $user_id = isset($_POST['user_id']) ? (int) $_POST['user_id'] : 0;
+
+        if (!$user_id) {
+            \wp_send_json_error(['message' => '無效的用戶 ID']);
+        }
+
+        // 檢查用戶是否存在
+        $user = \get_user_by('id', $user_id);
+        if (!$user) {
+            \wp_send_json_error(['message' => '用戶不存在']);
+        }
+
+        // 不允許刪除管理員
+        if (\in_array('administrator', $user->roles, true)) {
+            \wp_send_json_error(['message' => '不允許刪除管理員帳號']);
+        }
+
+        // 不允許刪除當前登入的用戶
+        if ($user_id === \get_current_user_id()) {
+            \wp_send_json_error(['message' => '不允許刪除自己的帳號']);
+        }
+
+        global $wpdb;
+        $bindings_table = $wpdb->prefix . 'buygo_line_users';
+
+        // 1. 刪除 LINE 綁定資料
+        $wpdb->delete($bindings_table, ['user_id' => $user_id]);
+
+        // 2. 刪除 Profile Sync 日誌
+        \delete_option("buygo_line_sync_log_{$user_id}");
+        \delete_option("buygo_line_conflict_log_{$user_id}");
+
+        // 3. 刪除 WordPress 用戶（會自動刪除所有 user_meta）
+        require_once ABSPATH . 'wp-admin/includes/user.php';
+        $deleted = \wp_delete_user($user_id);
+
+        if (!$deleted) {
+            \wp_send_json_error(['message' => '刪除用戶失敗']);
+        }
+
+        \wp_send_json_success(['message' => '用戶已刪除']);
+    }
+
+    /**
+     * AJAX: 刪除所有測試用戶（排除管理員）
+     */
+    public static function ajax_delete_all_test_users(): void
+    {
+        // 驗證 nonce
+        \check_ajax_referer('buygo_line_dev_tools', 'nonce');
+
+        // 驗證權限
+        if (!\current_user_can('manage_options')) {
+            \wp_send_json_error(['message' => '權限不足']);
+        }
+
+        global $wpdb;
+        $bindings_table = $wpdb->prefix . 'buygo_line_users';
+
+        // 取得所有已綁定 LINE 的用戶
+        $results = $wpdb->get_results(
+            "SELECT user_id FROM {$bindings_table}",
+            ARRAY_A
+        );
+
+        $deleted_count = 0;
+        $current_user_id = \get_current_user_id();
+
+        require_once ABSPATH . 'wp-admin/includes/user.php';
+
+        foreach ($results as $row) {
+            $user_id = (int) $row['user_id'];
+            $user = \get_user_by('id', $user_id);
+
+            if (!$user) {
+                continue;
+            }
+
+            // 跳過管理員和當前用戶
+            if (\in_array('administrator', $user->roles, true) || $user_id === $current_user_id) {
+                continue;
+            }
+
+            // 刪除 LINE 綁定
+            $wpdb->delete($bindings_table, ['user_id' => $user_id]);
+
+            // 刪除 Profile Sync 日誌
+            \delete_option("buygo_line_sync_log_{$user_id}");
+            \delete_option("buygo_line_conflict_log_{$user_id}");
+
+            // 刪除 WordPress 用戶
+            if (\wp_delete_user($user_id)) {
+                $deleted_count++;
+            }
+        }
+
+        \wp_send_json_success([
+            'count'   => $deleted_count,
+            'message' => "已刪除 {$deleted_count} 個測試用戶",
+        ]);
     }
 }

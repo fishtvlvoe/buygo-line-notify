@@ -456,6 +456,45 @@ if (!defined('ABSPATH')) {
             </tbody>
         </table>
 
+        <!-- 開發者工具 -->
+        <h2 style="color: #d63638;">⚠️ 開發者工具</h2>
+        <div style="background: #fff3cd; border-left: 4px solid #ffc107; padding: 12px; margin-bottom: 20px;">
+            <strong>警告：</strong>此區塊僅供開發和測試使用。刪除操作無法復原，請謹慎操作。
+        </div>
+        <table class="form-table" role="presentation">
+            <tbody>
+                <tr>
+                    <th scope="row">已綁定 LINE 的測試用戶</th>
+                    <td>
+                        <div id="line-users-list" style="max-height: 300px; overflow-y: auto; border: 1px solid #ddd; padding: 10px; background: #fafafa;">
+                            <p style="text-align: center; color: #666;">載入中...</p>
+                        </div>
+                        <p class="description">
+                            點擊「刪除」會同時移除：<br>
+                            1. LINE 綁定資料（wp_buygo_line_users 表）<br>
+                            2. WordPress 用戶帳號（包含所有 user_meta）<br>
+                            3. Profile Sync 和 Avatar 快取<br>
+                            <strong style="color: #d63638;">此操作無法復原！</strong>
+                        </p>
+                    </td>
+                </tr>
+                <tr>
+                    <th scope="row">批次操作</th>
+                    <td>
+                        <button type="button" class="button button-secondary" id="buygo-refresh-users">
+                            🔄 重新整理用戶列表
+                        </button>
+                        <button type="button" class="button" id="buygo-delete-all-test-users" style="margin-left: 10px; background: #d63638; color: #fff; border-color: #d63638;">
+                            🗑️ 刪除所有測試用戶
+                        </button>
+                        <p class="description">
+                            「刪除所有測試用戶」會刪除除了管理員以外的所有已綁定 LINE 的用戶。
+                        </p>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+
         <?php submit_button('儲存設定', 'primary', 'buygo_line_settings_submit'); ?>
     </form>
 </div>
@@ -525,6 +564,119 @@ jQuery(document).ready(function($) {
         }).fail(function() {
             $result.html('<span style="color: red;">請求失敗，請重試</span>');
             $button.prop('disabled', false).text('清除所有用戶的 LINE 頭像快取');
+        });
+    });
+
+    // 載入 LINE 用戶列表
+    function loadLineUsers() {
+        var $list = $('#line-users-list');
+        $list.html('<p style="text-align: center; color: #666;">載入中...</p>');
+
+        $.post(ajaxurl, {
+            action: 'buygo_line_get_users',
+            nonce: '<?php echo wp_create_nonce('buygo_line_dev_tools'); ?>'
+        }, function(response) {
+            if (response.success && response.data.users.length > 0) {
+                var html = '<table class="widefat" style="background: #fff;"><thead><tr>' +
+                    '<th>User ID</th><th>用戶名稱</th><th>Email</th><th>LINE UID</th><th>角色</th><th>操作</th>' +
+                    '</tr></thead><tbody>';
+
+                response.data.users.forEach(function(user) {
+                    var isAdmin = user.roles.includes('administrator');
+                    var deleteBtn = isAdmin
+                        ? '<span style="color: #999;">無法刪除管理員</span>'
+                        : '<button type="button" class="button button-small delete-user-btn" data-user-id="' + user.ID + '" style="background: #d63638; color: #fff; border-color: #d63638;">刪除</button>';
+
+                    html += '<tr>' +
+                        '<td>' + user.ID + '</td>' +
+                        '<td>' + user.display_name + '</td>' +
+                        '<td>' + user.user_email + '</td>' +
+                        '<td style="font-family: monospace; font-size: 11px;">' + user.line_uid + '</td>' +
+                        '<td>' + user.roles.join(', ') + '</td>' +
+                        '<td>' + deleteBtn + '</td>' +
+                        '</tr>';
+                });
+
+                html += '</tbody></table>';
+                $list.html(html);
+            } else {
+                $list.html('<p style="text-align: center; color: #666;">目前沒有已綁定 LINE 的用戶</p>');
+            }
+        }).fail(function() {
+            $list.html('<p style="text-align: center; color: #d63638;">載入失敗，請重試</p>');
+        });
+    }
+
+    // 頁面載入時讀取用戶列表
+    loadLineUsers();
+
+    // 重新整理按鈕
+    $('#buygo-refresh-users').on('click', function() {
+        loadLineUsers();
+    });
+
+    // 刪除單一用戶
+    $(document).on('click', '.delete-user-btn', function() {
+        var userId = $(this).data('user-id');
+        var $row = $(this).closest('tr');
+
+        if (!confirm('確定要刪除此用戶嗎？\n\n此操作會同時移除：\n1. LINE 綁定資料\n2. WordPress 用戶帳號\n3. 所有相關資料\n\n此操作無法復原！')) {
+            return;
+        }
+
+        var $btn = $(this);
+        $btn.prop('disabled', true).text('刪除中...');
+
+        $.post(ajaxurl, {
+            action: 'buygo_line_delete_user',
+            nonce: '<?php echo wp_create_nonce('buygo_line_dev_tools'); ?>',
+            user_id: userId
+        }, function(response) {
+            if (response.success) {
+                $row.fadeOut(300, function() {
+                    $(this).remove();
+                    if ($('#line-users-list tbody tr').length === 0) {
+                        loadLineUsers();
+                    }
+                });
+                alert('用戶已刪除');
+            } else {
+                alert('刪除失敗：' + (response.data.message || '未知錯誤'));
+                $btn.prop('disabled', false).text('刪除');
+            }
+        }).fail(function() {
+            alert('請求失敗，請重試');
+            $btn.prop('disabled', false).text('刪除');
+        });
+    });
+
+    // 批次刪除所有測試用戶
+    $('#buygo-delete-all-test-users').on('click', function() {
+        if (!confirm('⚠️ 警告：確定要刪除所有測試用戶嗎？\n\n此操作會刪除除了管理員以外的所有已綁定 LINE 的用戶。\n\n此操作無法復原！')) {
+            return;
+        }
+
+        if (!confirm('最後確認：真的要刪除所有測試用戶嗎？')) {
+            return;
+        }
+
+        var $btn = $(this);
+        $btn.prop('disabled', true).text('刪除中...');
+
+        $.post(ajaxurl, {
+            action: 'buygo_line_delete_all_test_users',
+            nonce: '<?php echo wp_create_nonce('buygo_line_dev_tools'); ?>'
+        }, function(response) {
+            if (response.success) {
+                alert('已刪除 ' + response.data.count + ' 個測試用戶');
+                loadLineUsers();
+            } else {
+                alert('刪除失敗：' + (response.data.message || '未知錯誤'));
+            }
+            $btn.prop('disabled', false).text('🗑️ 刪除所有測試用戶');
+        }).fail(function() {
+            alert('請求失敗，請重試');
+            $btn.prop('disabled', false).text('🗑️ 刪除所有測試用戶');
         });
     });
 });
