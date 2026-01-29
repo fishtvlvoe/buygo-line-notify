@@ -54,6 +54,9 @@ final class Plugin
         // 初始化 Avatar Service（get_avatar_url filter hook）
         \BuygoLineNotify\Services\AvatarService::init();
 
+        // 註冊帳號頁面整合（我的帳號 - LINE 綁定狀態顯示）
+        \BuygoLineNotify\Services\AccountIntegrationService::register_hooks();
+
         // 註冊 LINE Login shortcodes
         $this->register_shortcodes();
 
@@ -123,6 +126,7 @@ final class Plugin
         include_once BuygoLineNotify_PLUGIN_DIR . 'includes/services/class-user-service.php';
         include_once BuygoLineNotify_PLUGIN_DIR . 'includes/services/class-login-button-service.php';
         include_once BuygoLineNotify_PLUGIN_DIR . 'includes/services/class-url-filter-service.php';
+        include_once BuygoLineNotify_PLUGIN_DIR . 'includes/services/class-account-integration-service.php';
 
         // 載入 Exception 類別
         include_once BuygoLineNotify_PLUGIN_DIR . 'includes/exceptions/class-nsl-continue-page-render-exception.php';
