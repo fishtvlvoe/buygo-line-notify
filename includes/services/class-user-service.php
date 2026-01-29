@@ -102,6 +102,13 @@ class UserService {
             update_user_meta($user_id, 'line_picture_url', sanitize_url($profile['pictureUrl']));
         }
 
+        // Profile Sync（註冊時強制同步）
+        ProfileSyncService::syncProfile($user_id, [
+            'displayName' => $profile['displayName'] ?? '',
+            'email'       => $profile['email'] ?? '',
+            'pictureUrl'  => $profile['pictureUrl'] ?? '',
+        ], 'register');
+
         // 綁定 LINE UID
         $bind_result = $this->bind_line_to_user($user_id, $profile);
         if (is_wp_error($bind_result)) {
@@ -162,6 +169,13 @@ class UserService {
         if (!empty($profile['pictureUrl'])) {
             update_user_meta($user_id, 'line_picture_url', sanitize_url($profile['pictureUrl']));
         }
+
+        // Profile Sync（綁定時依策略同步）
+        ProfileSyncService::syncProfile($user_id, [
+            'displayName' => $profile['displayName'] ?? '',
+            'email'       => $profile['email'] ?? '',
+            'pictureUrl'  => $profile['pictureUrl'] ?? '',
+        ], 'link');
 
         // 儲存到 bindings 表（使用 LineUserService）
         $bind_result = LineUserService::bind_line_account($user_id, $line_uid, [
