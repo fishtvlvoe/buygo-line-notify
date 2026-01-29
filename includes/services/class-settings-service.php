@@ -210,8 +210,9 @@ class SettingsService
             'liff_endpoint_url',
             'login_button_position',
             'login_button_text',
-            'sync_on_login',       // 登入時是否同步 profile
-            'conflict_strategy',   // 衝突處理策略
+            'default_redirect_url', // 預設登入後跳轉 URL
+            'sync_on_login',        // 登入時是否同步 profile
+            'conflict_strategy',    // 衝突處理策略
         ];
 
         $settings = [];
