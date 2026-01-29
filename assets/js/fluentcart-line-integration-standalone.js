@@ -152,7 +152,8 @@
 			render();
 
 			try {
-				const redirectUrl = window.location.href;
+				// 使用 data attribute 或當前頁面 URL
+				const redirectUrl = container.dataset.redirectUrl || window.location.href;
 				const response = await fetch(
 					`${apiBase}/bind-url?redirect_url=${encodeURIComponent(redirectUrl)}`,
 					{
@@ -240,36 +241,6 @@
 				return dateString;
 			}
 		}
-
-		// 取得自訂 redirect URL
-		const redirectUrl = container.dataset.redirectUrl || window.location.href;
-
-		// 修改綁定函數使用自訂 redirect URL
-		const originalBindLine = bindLine;
-		bindLine = async function() {
-			state.loading = true;
-			render();
-
-			try {
-				const response = await fetch(
-					`${apiBase}/bind-url?redirect_url=${encodeURIComponent(redirectUrl)}`,
-					{ method: 'GET', credentials: 'same-origin' }
-				);
-				const data = await response.json();
-
-				if (data.success && data.authorize_url) {
-					window.location.href = data.authorize_url;
-				} else {
-					state.error = data.message || '取得授權 URL 失敗';
-					state.loading = false;
-					render();
-				}
-			} catch (err) {
-				state.error = '發生錯誤，請稍後再試';
-				state.loading = false;
-				render();
-			}
-		};
 
 		// 初始化：取得綁定狀態
 		fetchBindingStatus();
