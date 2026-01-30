@@ -20,6 +20,7 @@ define('BuygoLineNotify_PLUGIN_URL', plugin_dir_url(__FILE__));
 
 require_once __DIR__ . '/includes/class-plugin.php';
 require_once __DIR__ . '/includes/class-database.php';
+require_once __DIR__ . '/includes/class-updater.php';
 
 // 外掛啟動時初始化資料庫
 register_activation_hook(__FILE__, function() {
@@ -32,4 +33,13 @@ add_action('plugins_loaded', function() {
     \BuygoLineNotify\Plugin::instance()->init();
     error_log('BuygoLineNotify: Plugin initialized');
 }, 20);
+
+// 初始化自動更新器
+if (is_admin()) {
+    new \BuygoLineNotify\Updater(
+        __FILE__,
+        'fishtvlvoe',
+        'buygo-line-notify'
+    );
+}
 
