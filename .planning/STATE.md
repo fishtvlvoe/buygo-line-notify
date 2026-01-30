@@ -20,9 +20,10 @@ Progress: [██████████████░░░░░░] 75% ove
 
 ## Performance Metrics
 
-- Total plans completed: 25 (Phase 1: 4 plans, Phase 2: 2 plans, Phase 8: 2 plans, Phase 9: 3 plans, Phase 10: 3 plans, Phase 11: 1 plan, Phase 12: 4 plans, Phase 13: 4 plans, Phase 14: 2 plans)
+- Total plans completed: 29 (Phase 1: 4, Phase 2: 2, Phase 8: 2, Phase 9: 3, Phase 10: 3, Phase 11: 1, Phase 12: 4, Phase 13: 4, Phase 14: 2, Phase 15: 4)
+- Total SUMMARY files: 24 (所有已執行計畫的 SUMMARY 已補全)
 - Average duration: ~2.5 min per plan
-- Total execution time: ~62 min (v0.1 + v0.2)
+- Total execution time: ~72 min (v0.1 + v0.2)
 
 **By Milestone:**
 
@@ -50,16 +51,25 @@ Progress: [██████████████░░░░░░] 75% ove
 **Total v0.2 Requirements: 49**
 
 **Recent Activity:**
+- 2026-01-30: 補全所有缺失的 SUMMARY 文件
+  - Phase 15-02 SUMMARY: UserService（用戶建立與綁定）
+  - Phase 15-03 SUMMARY: Login_API（REST Endpoints，已標記 deprecated）
+  - Phase 15-04 SUMMARY: 設定頁面整合（Callback URL 顯示）
+- 2026-01-29: Phase 14 completed（buygo-line-notify Webhook 系統 - 2 plans）
+  - 14-01: Webhook_API + WebhookHandler（簽名驗證、去重、Hooks）
+  - 14-03: Plugin 整合並進行 LINE Console 驗證
+- 2026-01-29: Phase 15 completed（buygo-line-notify LINE Login 系統 - 4 plans）
+  - 15-01: StateManager + LoginService（OAuth 流程）
+  - 15-02: UserService（用戶建立與綁定）
+  - 15-03: Login_API（REST Endpoints，已標記 deprecated）
+  - 15-04: 設定頁面整合（Callback URL 顯示）
 - 2026-01-29: Phase 13 completed（前台整合 - 4 plans, 5 requirements）
-  - Wave 1: AccountIntegrationService（綁定狀態顯示）+ ajax_unbind（解除綁定）
-  - Wave 2: LoginButtonShortcode（[buygo_line_login] shortcode）
-  - Wave 3: 驗證檢查清單和 Phase Summary
 - 2026-01-29: Phase 12 completed（Profile Sync 與 Avatar 整合 - 4 plans, 8 requirements）
 - 2026-01-29: Phase 10 completed（Register Flow Page 系統 - 3 plans, 9 requirements）
 - 2026-01-29: Phase 9 completed（標準 WordPress URL 機制 - 3 plans, 5 requirements）
 - 2026-01-29: Phase 8 completed（資料表架構與查詢 API - 2 plans, 3 requirements）
 
-*Updated: 2026-01-29 after Phase 13 completion (所有 FRONTEND 需求完成)*
+*Updated: 2026-01-30 after 補全所有 SUMMARY 文件*
 
 ## Accumulated Context
 
