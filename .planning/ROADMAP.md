@@ -28,11 +28,11 @@
   2. Email 擷取、按鈕位置、按鈕文字、按鈕樣式設定都有對應的資料結構
   3. 外掛整合開關可控制 FluentCart/WooCommerce 整合行為
   4. 所有設定值有預設值，驗證錯誤時有清楚回應
-**Plans**: TBD
+**Plans**: 2 plans
 
 Plans:
-- [ ] 01-01: 統一設定 Service 和資料結構
-- [ ] 01-02: 設定 REST API 端點
+- [ ] 01-01-PLAN.md — 統一設定 Service 和資料結構（Settings_Schema + SettingsService 擴展）
+- [ ] 01-02-PLAN.md — 設定 REST API 端點（Settings_API 類別）
 
 ### Phase 2: 選單與導航框架
 **Goal**: 後台出現「LINE 設定」頂層選單，點擊後看到 6 個 Tab 的導航列
@@ -118,7 +118,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. 後端設定架構 | 0/2 | Not started | - |
+| 1. 後端設定架構 | 0/2 | Planned | - |
 | 2. 選單與導航框架 | 0/2 | Not started | - |
 | 3. 視覺設計系統 | 0/1 | Not started | - |
 | 4. 核心 Tab 實作 | 0/3 | Not started | - |
@@ -127,3 +127,4 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6
 
 ---
 *Roadmap created: 2026-01-31*
+*Phase 1 planned: 2026-02-01*
