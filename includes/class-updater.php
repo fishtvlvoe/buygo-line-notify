@@ -283,6 +283,12 @@ class Updater {
      */
     public function maybe_clear_cache() {
         if (isset($_GET['clear_update_cache']) && current_user_can('manage_options')) {
+            // 檢查是否正在進行外掛啟用操作
+            // 在外掛啟用期間執行 exit 會中斷啟用流程，導致外掛被自動停用
+            if (isset($_GET['action']) && ($_GET['action'] === 'activate' || $_GET['action'] === 'activate-selected')) {
+                return; // 跳過 redirect，避免中斷啟用流程
+            }
+
             delete_transient($this->cache_key);
             wp_redirect(remove_query_arg('clear_update_cache'));
             exit;
