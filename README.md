@@ -4,19 +4,25 @@ WordPress 外掛,提供 LINE Messaging API 整合功能,作為 BuyGo 系統的�
 
 ## 版本資訊
 
-**當前版本**: 0.1.0
-**WordPress 最低版本**: 5.8
-**PHP 最低版本**: 7.4
+**當前版本**: 0.2.0
+**WordPress 最低版本**: 6.0
+**PHP 最低版本**: 8.0
 **授權**: GPLv2 or later
 
 ## 功能特色
 
 ### 核心功能
 
+- **LINE Login 整合**: 完整的 LINE OAuth 2.0 登入系統
+  - 新用戶註冊 / Auto-link / 已登入綁定
+  - Profile Sync（name、email、avatar）
+  - 標準 WordPress URL 機制（wp-login.php?loginSocial=buygo-line）
+  - Register Flow Page + Shortcode
 - **LINE 訊息發送**: 支援文字、圖片、Flex Message
 - **Webhook 接收**: 接收並處理 LINE Webhook 事件
 - **圖片下載**: 自動下載 LINE 圖片到 WordPress Media Library
 - **使用者綁定**: LINE UID 與 WordPress User ID 關聯管理
+- **頭像整合**: 自動使用 LINE 頭像（get_avatar_url filter）
 - **Debug 工具**: 完整的日誌記錄與後台管理介面
 
 ### 技術特點
@@ -66,6 +72,14 @@ WordPress 外掛,提供 LINE Messaging API 整合功能,作為 BuyGo 系統的�
 3. 啟用 **Use webhook**
 4. 停用 **Auto-reply messages** (避免重複回覆)
 
+### 4. 設定 LINE Login（選用）
+
+1. LINE Developers Console > 建立 LINE Login Channel
+2. 取得 **Channel ID** 和 **Channel Secret**
+3. 設定 Callback URL: `https://your-site.com/wp-login.php?loginSocial=buygo-line`
+4. WordPress 後台 > LINE Notify > 設定 > 填寫 LINE Login 設定
+5. 建立「註冊流程頁面」並放置 `[buygo_line_register_flow]` shortcode
+
 ## 使用方式
 
 ### Facade API (推薦)
@@ -89,15 +103,43 @@ $lineUsers = BuygoLineNotify\BuygoLineNotify::line_users();
 $user = $lineUsers->getUserByLineUid($line_uid);
 ```
 
+### LINE Login Shortcodes
+
+```php
+// 顯示 LINE 登入按鈕
+[buygo_line_login]
+
+// 顯示 LINE 登入按鈕（自訂樣式）
+[buygo_line_login button_text="使用 LINE 登入" size="large"]
+
+// 註冊流程頁面（放在專屬頁面）
+[buygo_line_register_flow]
+```
+
 ### WordPress Hooks
 
 ```php
+// LINE 登入成功後
+add_action('buygo_line_after_login', function($user_id, $line_uid, $profile) {
+    // 處理登入成功
+}, 10, 3);
+
+// LINE 註冊成功後
+add_action('buygo_line_after_register', function($user_id, $line_uid, $profile) {
+    // 處理註冊成功
+}, 10, 3);
+
+// LINE 綁定成功後
+add_action('buygo_line_after_link', function($user_id, $line_uid, $profile) {
+    // 處理綁定成功
+}, 10, 3);
+
 // 監聽所有 Webhook 事件
 add_action('buygo_line_notify/webhook_event', function($event, $event_type, $line_uid, $user_id) {
     // 處理事件
 }, 10, 4);
 
-// 監聽訊息事件 (文字/圖片)
+// 監聯訊息事件 (文字/圖片)
 add_action('buygo_line_notify/webhook_message', function($event, $line_uid, $user_id) {
     if ($event['message']['type'] === 'text') {
         $text = $event['message']['text'];
@@ -236,6 +278,38 @@ composer test
 
 ## 更新日誌
 
+### 0.2.0 (2026-01-31)
+
+**LINE Login 完整整合**
+
+- ✨ LINE Login OAuth 2.0 完整流程
+  - 標準 WordPress URL 機制（wp-login.php?loginSocial=buygo-line）
+  - Register Flow Page + Shortcode 系統
+  - 新用戶註冊 / Auto-link / 已登入綁定
+  - State 驗證（32 字元隨機 + hash_equals + 10 分鐘有效期）
+
+- ✨ Profile Sync 系統
+  - 同步 LINE profile（display_name, email, avatar）
+  - 衝突處理策略（LINE 優先 / WordPress 優先 / 手動）
+  - 同步日誌記錄
+
+- ✨ Avatar 整合
+  - get_avatar_url filter hook
+  - 7 天快取機制
+  - 自動使用 LINE 頭像
+
+- ✨ 前台整合
+  - wp-login.php LINE 登入按鈕
+  - [buygo_line_login] shortcode
+  - 帳號綁定狀態顯示
+
+- 🧪 單元測試
+  - StateManager 測試
+  - WebhookVerifier 測試
+  - ProfileSyncService 測試
+  - LineUserService 測試
+  - AvatarService 測試
+
 ### 0.1.0 (2026-01-29)
 
 **首次發布**
@@ -289,4 +363,5 @@ BuyGo Development Team
 ---
 
 **首次發布**: 2026-01-29
-**版本**: 0.1.0
+**版本**: 0.2.0
+**最後更新**: 2026-01-31
