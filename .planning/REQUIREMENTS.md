@@ -124,17 +124,71 @@
 
 ## Traceability
 
-將在 ROADMAP.md 建立後更新此表格。
-
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| ... | ... | Pending |
+| BACKEND-01 | Phase 1 | Pending |
+| BACKEND-02 | Phase 1 | Pending |
+| BACKEND-03 | Phase 1 | Pending |
+| BACKEND-04 | Phase 1 | Pending |
+| BACKEND-05 | Phase 1 | Pending |
+| BACKEND-06 | Phase 1 | Pending |
+| BACKEND-07 | Phase 1 | Pending |
+| BACKEND-08 | Phase 1 | Pending |
+| BACKEND-09 | Phase 1 | Pending |
+| BACKEND-10 | Phase 1 | Pending |
+| MENU-01 | Phase 2 | Pending |
+| MENU-02 | Phase 2 | Pending |
+| MENU-03 | Phase 2 | Pending |
+| MENU-04 | Phase 2 | Pending |
+| NAV-01 | Phase 2 | Pending |
+| NAV-02 | Phase 2 | Pending |
+| NAV-03 | Phase 2 | Pending |
+| NAV-04 | Phase 2 | Pending |
+| DESIGN-01 | Phase 3 | Pending |
+| DESIGN-02 | Phase 3 | Pending |
+| DESIGN-03 | Phase 3 | Pending |
+| DESIGN-04 | Phase 3 | Pending |
+| DESIGN-05 | Phase 3 | Pending |
+| DESIGN-06 | Phase 3 | Pending |
+| TAB-INTRO-01 | Phase 4 | Pending |
+| TAB-INTRO-02 | Phase 4 | Pending |
+| TAB-INTRO-03 | Phase 4 | Pending |
+| TAB-INTRO-04 | Phase 4 | Pending |
+| TAB-INTRO-05 | Phase 4 | Pending |
+| TAB-INTRO-06 | Phase 4 | Pending |
+| TAB-SETTINGS-01 | Phase 4 | Pending |
+| TAB-SETTINGS-02 | Phase 4 | Pending |
+| TAB-SETTINGS-03 | Phase 4 | Pending |
+| TAB-SETTINGS-04 | Phase 4 | Pending |
+| TAB-SETTINGS-05 | Phase 4 | Pending |
+| TAB-SETTINGS-06 | Phase 4 | Pending |
+| TAB-BUTTONS-01 | Phase 4 | Pending |
+| TAB-BUTTONS-02 | Phase 4 | Pending |
+| TAB-BUTTONS-03 | Phase 4 | Pending |
+| TAB-BUTTONS-04 | Phase 4 | Pending |
+| TAB-SYNC-01 | Phase 5 | Pending |
+| TAB-SYNC-02 | Phase 5 | Pending |
+| TAB-SYNC-03 | Phase 5 | Pending |
+| TAB-SYNC-04 | Phase 5 | Pending |
+| TAB-SYNC-05 | Phase 5 | Pending |
+| TAB-USAGE-01 | Phase 5 | Pending |
+| TAB-USAGE-02 | Phase 5 | Pending |
+| TAB-USAGE-03 | Phase 5 | Pending |
+| TAB-USAGE-04 | Phase 5 | Pending |
+| TAB-USAGE-05 | Phase 5 | Pending |
+| TAB-LIFF-01 | Phase 5 | Pending |
+| TAB-LIFF-02 | Phase 5 | Pending |
+| INTEGRATION-01 | Phase 6 | Pending |
+| INTEGRATION-02 | Phase 6 | Pending |
+| INTEGRATION-03 | Phase 6 | Pending |
+| INTEGRATION-04 | Phase 6 | Pending |
+| INTEGRATION-05 | Phase 6 | Pending |
 
 **Coverage:**
-- v1 requirements: 待統計
-- Mapped to phases: 待 roadmap 建立
-- Unmapped: 待驗證
+- v1 requirements: 49
+- Mapped to phases: 49
+- Unmapped: 0
 
 ---
 *Requirements defined: 2026-01-31*
-*Last updated: 2026-01-31 after initial definition*
+*Last updated: 2026-01-31 after roadmap creation*
