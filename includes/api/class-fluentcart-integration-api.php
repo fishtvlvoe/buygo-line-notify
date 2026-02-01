@@ -172,7 +172,7 @@ class FluentCartIntegrationAPI {
 				200
 			);
 		} catch ( \Exception $e ) {
-			\BuygoLineNotify\Logger::get_instance()->log(
+			\BuygoLineNotify\Logger::log_placeholder(
 				'產生 authorize URL 失敗: ' . $e->getMessage(),
 				'ERROR'
 			);
@@ -228,7 +228,7 @@ class FluentCartIntegrationAPI {
 
 		// 記錄日誌
 		$user = \get_user_by( 'id', $user_id );
-		\BuygoLineNotify\Logger::get_instance()->log(
+		\BuygoLineNotify\Logger::log_placeholder(
 			"用戶 {$user_id} ({$user->user_login}) 透過 FluentCart 解除 LINE 綁定",
 			'INFO',
 			[ 'action' => 'unbind_via_fluentcart', 'user_id' => $user_id ]

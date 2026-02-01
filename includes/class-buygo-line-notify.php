@@ -62,11 +62,12 @@ class BuygoLineNotify
     /**
      * 取得 Logger 實例
      *
-     * @return Logger
+     * @deprecated Logger::get_instance() 不存在，請使用 Logger::log_placeholder() 代替
+     * @return null
      */
     public static function logger()
     {
-        return Logger::get_instance();
+        return null; // Deprecated: Logger::get_instance() does not exist
     }
 
     /**

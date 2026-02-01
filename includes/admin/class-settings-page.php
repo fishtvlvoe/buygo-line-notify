@@ -277,7 +277,7 @@ final class SettingsPage
         \delete_option("buygo_line_conflict_log_{$user_id}");
 
         // 記錄日誌
-        \BuygoLineNotify\Logger::get_instance()->log(
+        \BuygoLineNotify\Logger::log_placeholder(
             "用戶 {$user_id} ({$user->user_login}) 已成功解除 LINE 綁定",
             'INFO',
             ['action' => 'unbind', 'user_id' => $user_id, 'operator_id' => $current_user_id]

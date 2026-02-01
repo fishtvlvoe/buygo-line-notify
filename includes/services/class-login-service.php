@@ -154,12 +154,21 @@ class LoginService {
 			return $profile;
 		}
 
+		// 4. 從 id_token 解析 email（LINE Profile API 不返回 email）
+		if ( ! empty( $token_result['id_token'] ) ) {
+			$id_token_data = $this->decode_id_token( $token_result['id_token'] );
+			if ( ! empty( $id_token_data['email'] ) ) {
+				$profile['email'] = $id_token_data['email'];
+			}
+		}
+
 		Logger::log_placeholder(
 			'info',
 			array(
-				'message'  => 'LINE Login callback handled successfully',
-				'line_uid' => $profile['userId'] ?? 'unknown',
-				'state'    => $state,
+				'message'   => 'LINE Login callback handled successfully',
+				'line_uid'  => $profile['userId'] ?? 'unknown',
+				'has_email' => ! empty( $profile['email'] ),
+				'state'     => $state,
 			)
 		);
 
@@ -246,6 +255,60 @@ class LoginService {
 				'message'     => 'Profile fetch successful',
 				'userId'      => $data['userId'],
 				'displayName' => $data['displayName'] ?? 'unknown',
+			)
+		);
+
+		return $data;
+	}
+
+	/**
+	 * 解析 LINE id_token（JWT 格式）
+	 *
+	 * LINE id_token 是 JWT，包含 email 等資訊
+	 * 格式：header.payload.signature
+	 * 我們只需要 payload 部分（Base64 URL 編碼）
+	 *
+	 * @param string $id_token LINE id_token（JWT 格式）
+	 * @return array 解析後的 payload 資料
+	 */
+	private function decode_id_token( string $id_token ): array {
+		$parts = explode( '.', $id_token );
+
+		// JWT 應該有 3 個部分
+		if ( count( $parts ) !== 3 ) {
+			Logger::log_placeholder( 'warning', array( 'message' => 'Invalid id_token format' ) );
+			return array();
+		}
+
+		// 解析 payload（第二部分）
+		$payload = $parts[1];
+
+		// Base64 URL 解碼（替換 - 為 +，_ 為 /）
+		$payload = str_replace( array( '-', '_' ), array( '+', '/' ), $payload );
+
+		// 補齊 padding
+		$padding = strlen( $payload ) % 4;
+		if ( $padding > 0 ) {
+			$payload .= str_repeat( '=', 4 - $padding );
+		}
+
+		$decoded = base64_decode( $payload );
+		if ( $decoded === false ) {
+			Logger::log_placeholder( 'warning', array( 'message' => 'Failed to decode id_token payload' ) );
+			return array();
+		}
+
+		$data = json_decode( $decoded, true );
+		if ( ! is_array( $data ) ) {
+			Logger::log_placeholder( 'warning', array( 'message' => 'Invalid id_token payload JSON' ) );
+			return array();
+		}
+
+		Logger::log_placeholder(
+			'info',
+			array(
+				'message'   => 'id_token decoded successfully',
+				'has_email' => isset( $data['email'] ),
 			)
 		);
 

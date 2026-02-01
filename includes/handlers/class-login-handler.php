@@ -120,7 +120,7 @@ class Login_Handler {
 			$data      = $e->getData();
 			$state     = $data['state'] ?? '';
 
-			Logger::get_instance()->log(
+			Logger::log_placeholder(
 				'info',
 				array(
 					'message'   => 'NSLContinuePageRenderException caught',
@@ -162,7 +162,7 @@ class Login_Handler {
 
 				default:
 					// 未知流程類型，記錄警告並讓頁面繼續
-					Logger::get_instance()->log(
+					Logger::log_placeholder(
 						'warning',
 						array(
 							'message'   => 'Unknown flow type in NSLContinuePageRenderException',
@@ -173,7 +173,7 @@ class Login_Handler {
 			}
 		} catch ( \Exception $e ) {
 			// 其他錯誤
-			Logger::get_instance()->log(
+			Logger::log_placeholder(
 				'error',
 				array(
 					'message' => 'LINE Login error',
@@ -200,7 +200,7 @@ class Login_Handler {
 		// 取得 redirect_to 參數（授權完成後的導向 URL）
 		$redirect_to = isset( $_GET['redirect_to'] ) ? esc_url_raw( wp_unslash( $_GET['redirect_to'] ) ) : home_url();
 
-		Logger::get_instance()->log(
+		Logger::log_placeholder(
 			'info',
 			array(
 				'message'      => 'LINE Login authorize started',
@@ -230,7 +230,7 @@ class Login_Handler {
 		// 1. 驗證 state（StateManager 整合）
 		$state_data = $this->state_manager->verify_state( $state );
 		if ( $state_data === false ) {
-			Logger::get_instance()->log(
+			Logger::log_placeholder(
 				'error',
 				array(
 					'message' => 'State verification failed',
@@ -247,7 +247,7 @@ class Login_Handler {
 		// 2. Exchange token 並取得 profile（使用 LoginService）
 		$result = $this->login_service->handle_callback( $code, $state );
 		if ( is_wp_error( $result ) ) {
-			Logger::get_instance()->log(
+			Logger::log_placeholder(
 				'error',
 				array(
 					'message'       => 'LINE Login callback failed',
@@ -266,7 +266,7 @@ class Login_Handler {
 		$state_data = $result['state_data'];
 		$line_uid   = $profile['userId'];
 
-		Logger::get_instance()->log(
+		Logger::log_placeholder(
 			'info',
 			array(
 				'message'  => 'LINE Login callback successful',
@@ -287,7 +287,7 @@ class Login_Handler {
 
 			// 4a. 若 LINE UID 已綁定其他用戶,拒絕
 			if ( $user_id && $user_id !== $link_user_id ) {
-				Logger::get_instance()->log(
+				Logger::log_placeholder(
 					'error',
 					array(
 						'message'       => 'Link flow: LINE UID already linked to another user',
@@ -301,7 +301,7 @@ class Login_Handler {
 
 			// 4b. 若 LINE UID 已綁定同一用戶,直接登入
 			if ( $user_id === $link_user_id ) {
-				Logger::get_instance()->log(
+				Logger::log_placeholder(
 					'info',
 					array(
 						'message' => 'Link flow: Already linked, logging in',
@@ -359,7 +359,7 @@ class Login_Handler {
 				self::PROFILE_TRANSIENT_EXPIRY
 			);
 
-			Logger::get_instance()->log(
+			Logger::log_placeholder(
 				'info',
 				array(
 					'message'     => 'LINE profile stored for registration',
@@ -414,7 +414,7 @@ class Login_Handler {
 			);
 		}
 
-		Logger::get_instance()->log(
+		Logger::log_placeholder(
 			'info',
 			array(
 				'message' => 'User logged in via LINE',
@@ -440,7 +440,7 @@ class Login_Handler {
 				if ( ! user_can( $user_id, 'edit_posts' ) ) {
 					// 用戶沒有後台編輯權限（subscriber/customer），導向到首頁
 					$redirect_to = home_url();
-					Logger::get_instance()->log(
+					Logger::log_placeholder(
 						'info',
 						array(
 							'message'      => 'Redirect adjusted: user has no admin access',
@@ -520,9 +520,21 @@ class Login_Handler {
 				</p>
 				<p>
 					<label for="user_email">Email</label>
+					<?php
+					// 如果 LINE 沒有提供 email，生成一個基於 LINE UID 的佔位 email
+					$email_value = $profile['email'] ?? '';
+					if ( empty( $email_value ) && ! empty( $profile['userId'] ) ) {
+						$email_value = 'line_' . substr( $profile['userId'], 0, 10 ) . '@line.local';
+					}
+					?>
 					<input type="email" name="user_email" id="user_email"
 					       class="input" size="20"
-					       value="<?php echo esc_attr( $profile['email'] ?? '' ); ?>" required>
+					       value="<?php echo esc_attr( $email_value ); ?>" required>
+					<?php if ( str_ends_with( $email_value, '@line.local' ) ) : ?>
+						<p class="description" style="font-size: 12px; color: #666;">
+							您可以修改為真實 Email，或保留預設值
+						</p>
+					<?php endif; ?>
 				</p>
 				<p class="submit">
 					<input type="submit" name="wp-submit" id="wp-submit"
@@ -596,7 +608,7 @@ class Login_Handler {
 		$data = get_transient( $profile_key );
 
 		if ( $data === false ) {
-			Logger::get_instance()->log(
+			Logger::log_placeholder(
 				'error',
 				array(
 					'message' => 'Registration: Profile transient not found',
@@ -616,7 +628,7 @@ class Login_Handler {
 
 		// 4. 驗證 LINE UID 一致性（防篡改）
 		if ( $line_uid !== $profile['userId'] ) {
-			Logger::get_instance()->log(
+			Logger::log_placeholder(
 				'error',
 				array(
 					'message'       => 'Registration: LINE UID mismatch',
@@ -643,7 +655,7 @@ class Login_Handler {
 		// 6. 檢查 LINE UID 是否已綁定其他用戶
 		$existing_line_user = LineUserService::getUserByLineUid( $line_uid );
 		if ( $existing_line_user ) {
-			Logger::get_instance()->log(
+			Logger::log_placeholder(
 				'error',
 				array(
 					'message'  => 'Registration: LINE UID already linked',
@@ -683,7 +695,7 @@ class Login_Handler {
 		);
 
 		if ( is_wp_error( $user_id ) ) {
-			Logger::get_instance()->log(
+			Logger::log_placeholder(
 				'error',
 				array(
 					'message'       => 'Registration: wp_insert_user failed',
@@ -700,7 +712,7 @@ class Login_Handler {
 		$link_result = LineUserService::linkUser( $user_id, $line_uid, true );
 		if ( ! $link_result ) {
 			// 理論上不應該發生（前面已檢查），但保險起見
-			Logger::get_instance()->log(
+			Logger::log_placeholder(
 				'error',
 				array(
 					'message'  => 'Registration: linkUser failed after user creation',
@@ -716,7 +728,7 @@ class Login_Handler {
 			update_user_meta( $user_id, 'buygo_line_avatar_url', $profile['pictureUrl'] );
 		}
 
-		Logger::get_instance()->log(
+		Logger::log_placeholder(
 			'info',
 			array(
 				'message'  => 'User registered via LINE',
@@ -760,7 +772,7 @@ class Login_Handler {
 		array $state_data,
 		string $profile_key
 	): void {
-		Logger::get_instance()->log(
+		Logger::log_placeholder(
 			'info',
 			array(
 				'message'  => 'Auto-link: Email exists, linking to existing user',
@@ -773,7 +785,7 @@ class Login_Handler {
 		// 檢查該用戶是否已綁定其他 LINE 帳號
 		$existing_line_uid = LineUserService::getLineUidByUserId( $user_id );
 		if ( $existing_line_uid ) {
-			Logger::get_instance()->log(
+			Logger::log_placeholder(
 				'error',
 				array(
 					'message'           => 'Auto-link: User already linked to another LINE',
@@ -790,7 +802,7 @@ class Login_Handler {
 		// 綁定 LINE（is_registration = false，因為是 auto-link 不是新註冊）
 		$link_result = LineUserService::linkUser( $user_id, $line_uid, false );
 		if ( ! $link_result ) {
-			Logger::get_instance()->log(
+			Logger::log_placeholder(
 				'error',
 				array(
 					'message'  => 'Auto-link: linkUser failed',
@@ -808,7 +820,7 @@ class Login_Handler {
 			update_user_meta( $user_id, 'buygo_line_avatar_url', $profile['pictureUrl'] );
 		}
 
-		Logger::get_instance()->log(
+		Logger::log_placeholder(
 			'info',
 			array(
 				'message'  => 'Auto-link completed',
@@ -889,7 +901,7 @@ class Login_Handler {
 		$data = get_transient( $profile_key );
 
 		if ( $data === false ) {
-			Logger::get_instance()->log(
+			Logger::log_placeholder(
 				'error',
 				array(
 					'message' => 'Link submission: Profile transient not found',
@@ -908,7 +920,7 @@ class Login_Handler {
 		$current_user_id = get_current_user_id();
 
 		if ( $link_user_id !== $current_user_id ) {
-			Logger::get_instance()->log(
+			Logger::log_placeholder(
 				'error',
 				array(
 					'message'         => 'Link submission: User ID mismatch',
@@ -924,7 +936,7 @@ class Login_Handler {
 		// 4. LINE UID 是否已綁定其他用戶檢查
 		$existing_user_id = LineUserService::getUserByLineUid( $line_uid );
 		if ( $existing_user_id && $existing_user_id !== $current_user_id ) {
-			Logger::get_instance()->log(
+			Logger::log_placeholder(
 				'error',
 				array(
 					'message'          => 'Link submission: LINE UID already linked to another user',
@@ -946,7 +958,7 @@ class Login_Handler {
 		// 5. 當前用戶是否已綁定其他 LINE 檢查
 		$existing_line_uid = LineUserService::getLineUidByUserId( $current_user_id );
 		if ( $existing_line_uid && $existing_line_uid !== $line_uid ) {
-			Logger::get_instance()->log(
+			Logger::log_placeholder(
 				'error',
 				array(
 					'message'           => 'Link submission: User already linked to another LINE',
@@ -968,7 +980,7 @@ class Login_Handler {
 		// 6. 執行綁定（is_registration = false）
 		$link_result = LineUserService::linkUser( $current_user_id, $line_uid, false );
 		if ( ! $link_result ) {
-			Logger::get_instance()->log(
+			Logger::log_placeholder(
 				'error',
 				array(
 					'message' => 'Link submission: linkUser failed',
@@ -998,7 +1010,7 @@ class Login_Handler {
 			'link'
 		);
 
-		Logger::get_instance()->log(
+		Logger::log_placeholder(
 			'info',
 			array(
 				'message'  => 'User linked LINE account successfully',

@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+    <title>BuyGo 快速登入</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 20px;
+            padding: 40px 30px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            max-width: 400px;
+            width: 100%;
+            text-align: center;
+        }
+
+        .logo {
+            width: 80px;
+            height: 80px;
+            margin: 0 auto 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 40px;
+            color: white;
+        }
+
+        h1 {
+            font-size: 24px;
+            color: #333;
+            margin-bottom: 10px;
+        }
+
+        p {
+            color: #666;
+            margin-bottom: 30px;
+            line-height: 1.6;
+        }
+
+        .status {
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            font-size: 14px;
+        }
+
+        .status.loading {
+            background: #e3f2fd;
+            color: #1976d2;
+        }
+
+        .status.success {
+            background: #e8f5e9;
+            color: #2e7d32;
+        }
+
+        .status.error {
+            background: #ffebee;
+            color: #c62828;
+        }
+
+        .btn {
+            display: inline-block;
+            padding: 15px 40px;
+            background: #06c755;
+            color: white;
+            text-decoration: none;
+            border-radius: 10px;
+            font-weight: bold;
+            transition: all 0.3s;
+            border: none;
+            cursor: pointer;
+            font-size: 16px;
+        }
+
+        .btn:hover {
+            background: #05b34c;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(6, 199, 85, 0.3);
+        }
+
+        .btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .loading-spinner {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-right: 10px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .debug-info {
+            margin-top: 30px;
+            padding: 15px;
+            background: #f5f5f5;
+            border-radius: 10px;
+            font-size: 12px;
+            color: #666;
+            text-align: left;
+            font-family: monospace;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="logo">🛒</div>
+        <h1>BuyGo 快速登入</h1>
+        <p>使用 LINE 帳號快速登入,享受便捷購物體驗</p>
+
+        <div id="status" class="status loading" style="display: none;">
+            <div class="loading-spinner"></div>
+            <span id="status-text">正在初始化...</span>
+        </div>
+
+        <button id="login-btn" class="btn" style="display: none;">
+            使用 LINE 登入
+        </button>
+
+        <div id="debug" class="debug-info" style="display: none;"></div>
+    </div>
+
+    <!-- LIFF SDK -->
+    <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+
+    <script>
+        // 設定 (從 WordPress 動態載入)
+        const CONFIG = {
+            // ⚠️ 重要: 這個要替換成你的 LIFF ID
+            liffId: '2008622068-iU4Z1lk4',
+
+            // WordPress REST API Endpoint
+            apiUrl: window.location.origin + '/wp-json/buygo/v1/liff-login',
+
+            // 是否顯示除錯訊息
+            debug: true
+        };
+
+        // DOM 元素
+        const statusEl = document.getElementById('status');
+        const statusTextEl = document.getElementById('status-text');
+        const loginBtn = document.getElementById('login-btn');
+        const debugEl = document.getElementById('debug');
+
+        // 除錯日誌
+        function log(message, type = 'info') {
+            if (!CONFIG.debug) return;
+
+            const timestamp = new Date().toLocaleTimeString();
+            const logMessage = `[${timestamp}] ${message}`;
+
+            console.log(logMessage);
+
+            if (debugEl) {
+                debugEl.style.display = 'block';
+                debugEl.innerHTML += `<div>${logMessage}</div>`;
+                debugEl.scrollTop = debugEl.scrollHeight;
+            }
+        }
+
+        // 顯示狀態
+        function showStatus(message, type = 'loading') {
+            statusEl.style.display = 'block';
+            statusEl.className = `status ${type}`;
+            statusTextEl.textContent = message;
+
+            if (type === 'loading') {
+                statusEl.querySelector('.loading-spinner').style.display = 'inline-block';
+            } else {
+                const spinner = statusEl.querySelector('.loading-spinner');
+                if (spinner) spinner.style.display = 'none';
+            }
+
+            log(`Status: ${message} (${type})`);
+        }
+
+        // LIFF 初始化
+        async function initializeLIFF() {
+            try {
+                showStatus('正在初始化 LIFF...', 'loading');
+                log('開始初始化 LIFF SDK');
+
+                // 檢查 LIFF ID
+                if (CONFIG.liffId === 'YOUR-LIFF-ID') {
+                    throw new Error('請先在程式碼中設定 LIFF ID');
+                }
+
+                // 初始化 LIFF
+                await liff.init({ liffId: CONFIG.liffId });
+                log('LIFF 初始化成功');
+
+                // 檢查環境
+                if (liff.isInClient()) {
+                    log('環境: LINE 內建瀏覽器 ✅');
+                } else {
+                    log('環境: 外部瀏覽器 ⚠️');
+                    showStatus('請在 LINE 應用程式中開啟此連結', 'error');
+                    return;
+                }
+
+                // 檢查登入狀態
+                if (liff.isLoggedIn()) {
+                    log('用戶已登入 LINE ✅');
+                    await handleLogin();
+                } else {
+                    log('用戶未登入,顯示登入按鈕');
+                    showLoginButton();
+                }
+
+            } catch (error) {
+                log(`LIFF 初始化失敗: ${error.message}`, 'error');
+                showStatus(`初始化失敗: ${error.message}`, 'error');
+            }
+        }
+
+        // 顯示登入按鈕
+        function showLoginButton() {
+            statusEl.style.display = 'none';
+            loginBtn.style.display = 'inline-block';
+
+            loginBtn.addEventListener('click', () => {
+                log('用戶點擊登入按鈕');
+                liff.login();
+            });
+        }
+
+        // 處理登入
+        async function handleLogin() {
+            try {
+                showStatus('正在取得用戶資料...', 'loading');
+
+                // 取得 LINE Profile
+                const profile = await liff.getProfile();
+                log(`取得 LINE Profile: ${profile.displayName} (${profile.userId})`);
+
+                // 取得 Access Token
+                const accessToken = liff.getAccessToken();
+                log('取得 Access Token ✅');
+
+                // 發送到 WordPress API
+                showStatus('正在綁定 WordPress 帳號...', 'loading');
+                log(`呼叫 WordPress API: ${CONFIG.apiUrl}`);
+
+                const response = await fetch(CONFIG.apiUrl, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        user_id: profile.userId,
+                        display_name: profile.displayName,
+                        picture_url: profile.pictureUrl,
+                        access_token: accessToken
+                    })
+                });
+
+                const result = await response.json();
+                log(`API 回應: ${JSON.stringify(result)}`);
+
+                if (response.ok && result.success) {
+                    showStatus('登入成功!正在跳轉...', 'success');
+                    log('登入成功 ✅');
+
+                    // 跳轉到首頁或指定頁面
+                    setTimeout(() => {
+                        window.location.href = result.redirect_url || '/';
+                    }, 1500);
+                } else {
+                    throw new Error(result.message || '登入失敗');
+                }
+
+            } catch (error) {
+                log(`登入處理失敗: ${error.message}`, 'error');
+                showStatus(`登入失敗: ${error.message}`, 'error');
+            }
+        }
+
+        // 頁面載入完成後初始化
+        window.addEventListener('DOMContentLoaded', () => {
+            log('頁面載入完成,開始初始化');
+            initializeLIFF();
+        });
+    </script>
+</body>
+</html>

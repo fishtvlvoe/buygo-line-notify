@@ -64,6 +64,7 @@ class WebhookHandler {
 		$event_type = $event['type'] ?? '';
 		$line_uid = $event['source']['userId'] ?? '';
 		$webhook_event_id = $event['webhookEventId'] ?? null;
+		$reply_token = $event['replyToken'] ?? '';
 
 		// 取得對應的 WordPress User ID（如果已綁定）
 		$user_id = null;
@@ -85,19 +86,22 @@ class WebhookHandler {
 		switch ( $event_type ) {
 			case 'message':
 				do_action( 'buygo_line_notify/webhook_message', $event, $line_uid, $user_id );
-				$this->handle_message( $event, $line_uid, $user_id );
+				$this->handle_message( $event, $line_uid, $user_id, $reply_token );
 				break;
 
 			case 'follow':
 				do_action( 'buygo_line_notify/webhook_follow', $event, $line_uid, $user_id );
+				$this->send_response_if_provided( 'follow', $event, $line_uid, $user_id, $reply_token );
 				break;
 
 			case 'unfollow':
 				do_action( 'buygo_line_notify/webhook_unfollow', $event, $line_uid, $user_id );
+				// unfollow 不需要回覆
 				break;
 
 			case 'postback':
 				do_action( 'buygo_line_notify/webhook_postback', $event, $line_uid, $user_id );
+				$this->send_response_if_provided( 'postback', $event, $line_uid, $user_id, $reply_token );
 				break;
 
 			default:
@@ -109,12 +113,13 @@ class WebhookHandler {
 	/**
 	 * 處理訊息事件並觸發對應的訊息類型 Hook
 	 *
-	 * @param array  $event    LINE Webhook 事件資料
-	 * @param string $line_uid LINE User ID
-	 * @param int|null $user_id WordPress User ID (null if not linked)
+	 * @param array    $event       LINE Webhook 事件資料
+	 * @param string   $line_uid    LINE User ID
+	 * @param int|null $user_id     WordPress User ID (null if not linked)
+	 * @param string   $reply_token Reply Token
 	 * @return void
 	 */
-	private function handle_message( array $event, string $line_uid, ?int $user_id ): void {
+	private function handle_message( array $event, string $line_uid, ?int $user_id, string $reply_token ): void {
 		$message_type = $event['message']['type'] ?? '';
 		$message_id = $event['message']['id'] ?? '';
 
@@ -123,36 +128,136 @@ class WebhookHandler {
 		switch ( $message_type ) {
 			case 'text':
 				do_action( 'buygo_line_notify/webhook_message_text', $event, $line_uid, $user_id, $message_id );
+				$this->send_response_if_provided( 'message_text', $event, $line_uid, $user_id, $reply_token );
 				break;
 
 			case 'image':
 				do_action( 'buygo_line_notify/webhook_message_image', $event, $line_uid, $user_id, $message_id );
+				$this->send_response_if_provided( 'message_image', $event, $line_uid, $user_id, $reply_token );
 				break;
 
 			case 'video':
 				do_action( 'buygo_line_notify/webhook_message_video', $event, $line_uid, $user_id, $message_id );
+				$this->send_response_if_provided( 'message_video', $event, $line_uid, $user_id, $reply_token );
 				break;
 
 			case 'audio':
 				do_action( 'buygo_line_notify/webhook_message_audio', $event, $line_uid, $user_id, $message_id );
+				$this->send_response_if_provided( 'message_audio', $event, $line_uid, $user_id, $reply_token );
 				break;
 
 			case 'file':
 				do_action( 'buygo_line_notify/webhook_message_file', $event, $line_uid, $user_id, $message_id );
+				$this->send_response_if_provided( 'message_file', $event, $line_uid, $user_id, $reply_token );
 				break;
 
 			case 'location':
 				do_action( 'buygo_line_notify/webhook_message_location', $event, $line_uid, $user_id, $message_id );
+				$this->send_response_if_provided( 'message_location', $event, $line_uid, $user_id, $reply_token );
 				break;
 
 			case 'sticker':
 				do_action( 'buygo_line_notify/webhook_message_sticker', $event, $line_uid, $user_id, $message_id );
+				$this->send_response_if_provided( 'message_sticker', $event, $line_uid, $user_id, $reply_token );
 				break;
 
 			default:
 				// 未處理的訊息類型
 				break;
 		}
+	}
+
+	/**
+	 * 透過 Filter 向其他外掛詢問回覆內容，如果有則發送
+	 *
+	 * 這是 buygo-line-notify 與 buygo-plus-one-dev 的橋接點：
+	 * - buygo-plus-one-dev 監聽 'buygo_line_notify/get_response' filter
+	 * - 根據事件類型和用戶身份決定要回傳的模板內容
+	 * - buygo-line-notify 收到內容後發送 LINE 訊息
+	 *
+	 * @param string   $action_type 事件類型（message_text, message_image, follow, postback...）
+	 * @param array    $event       LINE Webhook 事件資料
+	 * @param string   $line_uid    LINE User ID
+	 * @param int|null $user_id     WordPress User ID (null if not linked)
+	 * @param string   $reply_token Reply Token
+	 * @return void
+	 */
+	private function send_response_if_provided( string $action_type, array $event, string $line_uid, ?int $user_id, string $reply_token ): void {
+		// 透過 Filter 向其他外掛詢問回覆內容
+		// 回傳格式可以是：
+		// 1. null - 不回覆
+		// 2. string - 純文字訊息
+		// 3. array - LINE Message 格式（text, flex, image...）
+		$response = apply_filters(
+			'buygo_line_notify/get_response',
+			null,
+			$action_type,
+			$event,
+			$line_uid,
+			$user_id
+		);
+
+		// 如果沒有回覆內容，直接返回
+		if ( $response === null ) {
+			return;
+		}
+
+		// 發送回覆
+		$this->send_reply( $reply_token, $response, $line_uid );
+	}
+
+	/**
+	 * 發送 LINE 回覆訊息
+	 *
+	 * @param string       $reply_token Reply Token
+	 * @param string|array $message     訊息內容（純文字或 LINE Message 格式）
+	 * @param string       $line_uid    LINE User ID（Reply 失敗時用於 Push）
+	 * @return bool
+	 */
+	private function send_reply( string $reply_token, $message, string $line_uid ): bool {
+		// 取得 MessagingService
+		$messaging = \BuygoLineNotify\BuygoLineNotify::messaging();
+
+		// 如果是純文字，轉換為 LINE Message 格式
+		if ( is_string( $message ) ) {
+			$message = [
+				'type' => 'text',
+				'text' => $message,
+			];
+		}
+
+		// 嘗試使用 Reply Token 回覆
+		if ( ! empty( $reply_token ) ) {
+			$result = $messaging->send_reply( $reply_token, $message, $line_uid );
+
+			if ( ! is_wp_error( $result ) ) {
+				return true;
+			}
+
+			// Reply 失敗，記錄日誌
+			Logger::log( 'reply_failed', [
+				'error'    => $result->get_error_message(),
+				'line_uid' => $line_uid,
+				'fallback' => 'push_message',
+			] );
+		}
+
+		// Reply 失敗或沒有 Reply Token，改用 Push
+		if ( ! empty( $line_uid ) ) {
+			$result = $messaging->push_message( $line_uid, $message );
+
+			if ( is_wp_error( $result ) ) {
+				Logger::log( 'push_failed', [
+					'error'    => $result->get_error_message(),
+					'line_uid' => $line_uid,
+				] );
+				return false;
+			}
+
+			return true;
+		}
+
+		return false;
 	}
 
 	/**
