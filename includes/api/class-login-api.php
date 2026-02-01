@@ -126,7 +126,7 @@ class Login_API {
         header('X-BuyGo-Deprecated: Use wp-login.php?loginSocial=buygo-line instead');
 
         // 記錄 deprecated 呼叫
-        Logger::get_instance()->log('warning', [
+        Logger::log_placeholder('warning', [
             'message' => 'Deprecated REST API /login/authorize called',
             'recommendation' => 'Use wp-login.php?loginSocial=buygo-line instead',
         ]);
@@ -136,7 +136,7 @@ class Login_API {
         // Get authorize URL from LoginService
         $authorize_url = $this->login_service->get_authorize_url($redirect_url);
 
-        Logger::get_instance()->log('info', [
+        Logger::log_placeholder('info', [
             'message' => 'Authorize URL requested',
             'redirect_url' => $redirect_url,
         ]);
@@ -166,7 +166,7 @@ class Login_API {
         header('X-BuyGo-Deprecated: OAuth callback now uses wp-login.php entry point');
 
         // 記錄 deprecated 呼叫
-        Logger::get_instance()->log('warning', [
+        Logger::log_placeholder('warning', [
             'message' => 'Deprecated REST API /login/callback called',
             'recommendation' => 'Configure LINE Developers Console redirect_uri to wp-login.php?loginSocial=buygo-line',
         ]);
@@ -175,7 +175,7 @@ class Login_API {
         $state = $request->get_param('state');
 
         // Debug: 記錄 callback 收到的參數
-        Logger::get_instance()->log('debug', [
+        Logger::log_placeholder('debug', [
             'message' => 'Callback received',
             'code' => $code ? substr($code, 0, 20) . '...' : 'null',
             'state' => $state,
@@ -187,7 +187,7 @@ class Login_API {
 
         if (is_wp_error($result)) {
             // Callback failed, redirect to redirect_url with error
-            Logger::get_instance()->log('error', [
+            Logger::log_placeholder('error', [
                 'message' => 'Callback failed',
                 'error' => $result->get_error_message(),
             ]);
@@ -214,7 +214,7 @@ class Login_API {
             // LINE UID already bound, login that user
             wp_set_auth_cookie($existing_user_id, true);
 
-            Logger::get_instance()->log('info', [
+            Logger::log_placeholder('info', [
                 'message' => 'User logged in via LINE',
                 'user_id' => $existing_user_id,
                 'line_uid' => $line_uid,
@@ -236,7 +236,7 @@ class Login_API {
             $bind_result = $this->user_service->bind_line_to_user($user_id, $profile);
 
             if (is_wp_error($bind_result)) {
-                Logger::get_instance()->log('error', [
+                Logger::log_placeholder('error', [
                     'message' => 'Failed to bind LINE to user',
                     'user_id' => $user_id,
                     'line_uid' => $line_uid,
@@ -252,7 +252,7 @@ class Login_API {
             // Bind successful, login user
             wp_set_auth_cookie($user_id, true);
 
-            Logger::get_instance()->log('info', [
+            Logger::log_placeholder('info', [
                 'message' => 'LINE bound to existing user',
                 'user_id' => $user_id,
                 'line_uid' => $line_uid,
@@ -269,7 +269,7 @@ class Login_API {
         $new_user_id = $this->user_service->create_user_from_line($profile);
 
         if (is_wp_error($new_user_id)) {
-            Logger::get_instance()->log('error', [
+            Logger::log_placeholder('error', [
                 'message' => 'Failed to create user from LINE',
                 'line_uid' => $line_uid,
                 'error' => $new_user_id->get_error_message(),
@@ -284,7 +284,7 @@ class Login_API {
         // User created successfully, login user
         wp_set_auth_cookie($new_user_id, true);
 
-        Logger::get_instance()->log('info', [
+        Logger::log_placeholder('info', [
             'message' => 'New user created from LINE',
             'user_id' => $new_user_id,
             'line_uid' => $line_uid,
@@ -329,7 +329,7 @@ class Login_API {
         // Generate authorize URL with user_id in state
         $authorize_url = $this->login_service->get_authorize_url($redirect_url, $user_id);
 
-        Logger::get_instance()->log('info', [
+        Logger::log_placeholder('info', [
             'message' => 'Bind authorize URL requested',
             'user_id' => $user_id,
             'redirect_url' => $redirect_url,
