@@ -45,16 +45,14 @@ class MessagingService
         }
 
         // 取得 LINE UID
-        $line_data = LineUserService::getUser($user_id);
-        if (!$line_data || empty($line_data['line_uid'])) {
+        $line_uid = LineUserService::getLineUidByUserId($user_id);
+        if (!$line_uid) {
             return new \WP_Error(
                 'line_uid_not_found',
                 '無法取得 LINE UID',
                 ['user_id' => $user_id]
             );
         }
-
-        $line_uid = $line_data['line_uid'];
 
         // 組裝訊息
         $messages = [
@@ -87,16 +85,14 @@ class MessagingService
         }
 
         // 取得 LINE UID
-        $line_data = LineUserService::getUser($user_id);
-        if (!$line_data || empty($line_data['line_uid'])) {
+        $line_uid = LineUserService::getLineUidByUserId($user_id);
+        if (!$line_uid) {
             return new \WP_Error(
                 'line_uid_not_found',
                 '無法取得 LINE UID',
                 ['user_id' => $user_id]
             );
         }
-
-        $line_uid = $line_data['line_uid'];
 
         // 組裝訊息
         $messages = [
@@ -131,16 +127,14 @@ class MessagingService
         }
 
         // 取得 LINE UID
-        $line_data = LineUserService::getUser($user_id);
-        if (!$line_data || empty($line_data['line_uid'])) {
+        $line_uid = LineUserService::getLineUidByUserId($user_id);
+        if (!$line_uid) {
             return new \WP_Error(
                 'line_uid_not_found',
                 '無法取得 LINE UID',
                 ['user_id' => $user_id]
             );
         }
-
-        $line_uid = $line_data['line_uid'];
 
         // 如果沒有提供預覽圖，使用原始圖
         if (empty($preview_url)) {

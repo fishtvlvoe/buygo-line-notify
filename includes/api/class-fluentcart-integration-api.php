@@ -101,7 +101,7 @@ class FluentCartIntegrationAPI {
 		}
 
 		// 取得綁定資料
-		$line_data = \BuygoLineNotify\Services\LineUserService::getUser( $user_id );
+		$line_data = \BuygoLineNotify\Services\LineUserService::getBinding( $user_id );
 
 		if ( ! $line_data ) {
 			return new \WP_REST_Response(
@@ -122,10 +122,10 @@ class FluentCartIntegrationAPI {
 			[
 				'success'      => true,
 				'is_linked'    => true,
-				'line_uid'     => $line_data['line_uid'] ?? '',
+				'line_uid'     => $line_data->line_uid ?? '',
 				'display_name' => $display_name ?: '未知',
 				'avatar_url'   => $avatar_url ?: '',
-				'linked_at'    => $line_data['link_date'] ?? '',
+				'linked_at'    => $line_data->created_at ?? '',
 			],
 			200
 		);

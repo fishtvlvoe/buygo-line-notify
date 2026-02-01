@@ -67,12 +67,10 @@ class WebhookHandler {
 		$reply_token = $event['replyToken'] ?? '';
 
 		// 取得對應的 WordPress User ID（如果已綁定）
+		// getUserByLineUid() 直接返回 int|null，不是 WP_User 對象
 		$user_id = null;
 		if ( ! empty( $line_uid ) ) {
-			$user = LineUserService::getUserByLineUid( $line_uid );
-			if ( $user ) {
-				$user_id = $user->ID;
-			}
+			$user_id = LineUserService::getUserByLineUid( $line_uid );
 		}
 
 		// 記錄 Webhook 事件（Debug 工具）

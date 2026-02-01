@@ -58,7 +58,7 @@ class LineUserService {
 
         $user_id = $wpdb->get_var(
             $wpdb->prepare(
-                "SELECT user_id FROM {$table_name} WHERE identifier = %s AND type = 'line' LIMIT 1",
+                "SELECT user_id FROM {$table_name} WHERE line_uid = %s LIMIT 1",
                 $line_uid
             )
         );
@@ -79,7 +79,7 @@ class LineUserService {
 
         $line_uid = $wpdb->get_var(
             $wpdb->prepare(
-                "SELECT identifier FROM {$table_name} WHERE user_id = %d AND type = 'line' LIMIT 1",
+                "SELECT line_uid FROM {$table_name} WHERE user_id = %d LIMIT 1",
                 $user_id
             )
         );
@@ -104,7 +104,7 @@ class LineUserService {
      * @since 2.0.0
      * @param int    $user_id         WordPress 使用者 ID
      * @param string $line_uid        LINE 使用者 ID
-     * @param bool   $is_registration 是否為註冊流程（true: 設定 register_date）
+     * @param bool   $is_registration 是否為註冊流程（已棄用，不再使用）
      * @return bool 是否成功
      */
     public static function linkUser(int $user_id, string $line_uid, bool $is_registration = false): bool {
@@ -125,37 +125,21 @@ class LineUserService {
             return false;
         }
 
-        // 若已存在相同綁定，更新 link_date
+        // 若已存在相同綁定，更新 updated_at
         if ($existing_user_id === $user_id && $existing_line_uid === $line_uid) {
             $update_data = [
-                'link_date' => current_time('mysql'),
+                'updated_at' => current_time('mysql'),
             ];
-
-            // 若為註冊流程且 register_date 為 NULL，設定 register_date
-            if ($is_registration) {
-                $existing = $wpdb->get_row(
-                    $wpdb->prepare(
-                        "SELECT register_date FROM {$table_name} WHERE user_id = %d AND identifier = %s AND type = 'line'",
-                        $user_id,
-                        $line_uid
-                    )
-                );
-
-                if (!$existing || is_null($existing->register_date)) {
-                    $update_data['register_date'] = current_time('mysql');
-                }
-            }
 
             $result = $wpdb->update(
                 $table_name,
                 $update_data,
                 [
-                    'user_id'    => $user_id,
-                    'identifier' => $line_uid,
-                    'type'       => 'line',
+                    'user_id'  => $user_id,
+                    'line_uid' => $line_uid,
                 ],
-                array_fill(0, count($update_data), '%s'),
-                ['%d', '%s', '%s']
+                ['%s'],
+                ['%d', '%s']
             );
 
             return $result !== false;
@@ -163,19 +147,13 @@ class LineUserService {
 
         // 新增綁定
         $insert_data = [
-            'type'       => 'line',
-            'identifier' => $line_uid,
+            'line_uid'   => $line_uid,
             'user_id'    => $user_id,
-            'link_date'  => current_time('mysql'),
+            'created_at' => current_time('mysql'),
+            'updated_at' => current_time('mysql'),
         ];
 
-        // 明確建立 format array，避免 count mismatch
-        $formats = ['%s', '%s', '%d', '%s']; // type, identifier, user_id, link_date
-
-        if ($is_registration) {
-            $insert_data['register_date'] = current_time('mysql');
-            $formats[] = '%s'; // register_date
-        }
+        $formats = ['%s', '%d', '%s', '%s']; // line_uid, user_id, created_at, updated_at
 
         $result = $wpdb->insert(
             $table_name,
@@ -201,9 +179,8 @@ class LineUserService {
             $table_name,
             [
                 'user_id' => $user_id,
-                'type'    => 'line',
             ],
-            ['%d', '%s']
+            ['%d']
         );
 
         return $result !== false;
@@ -214,7 +191,7 @@ class LineUserService {
      *
      * @since 2.0.0
      * @param int $user_id WordPress 使用者 ID
-     * @return object|null 綁定資料物件（ID, type, identifier, user_id, register_date, link_date），未找到則返回 null
+     * @return object|null 綁定資料物件（id, user_id, line_uid, created_at, updated_at），未找到則返回 null
      */
     public static function getBinding(int $user_id): ?object {
         global $wpdb;
@@ -222,7 +199,7 @@ class LineUserService {
 
         $binding = $wpdb->get_row(
             $wpdb->prepare(
-                "SELECT * FROM {$table_name} WHERE user_id = %d AND type = 'line' LIMIT 1",
+                "SELECT * FROM {$table_name} WHERE user_id = %d LIMIT 1",
                 $user_id
             )
         );
@@ -235,7 +212,7 @@ class LineUserService {
      *
      * @since 2.0.0
      * @param string $line_uid LINE 使用者 ID
-     * @return object|null 綁定資料物件（ID, type, identifier, user_id, register_date, link_date），未找到則返回 null
+     * @return object|null 綁定資料物件（id, user_id, line_uid, created_at, updated_at），未找到則返回 null
      */
     public static function getBindingByLineUid(string $line_uid): ?object {
         global $wpdb;
@@ -243,7 +220,7 @@ class LineUserService {
 
         $binding = $wpdb->get_row(
             $wpdb->prepare(
-                "SELECT * FROM {$table_name} WHERE identifier = %s AND type = 'line' LIMIT 1",
+                "SELECT * FROM {$table_name} WHERE line_uid = %s LIMIT 1",
                 $line_uid
             )
         );

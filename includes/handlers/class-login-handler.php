@@ -16,6 +16,7 @@ use BuygoLineNotify\Services\LineUserService;
 use BuygoLineNotify\Services\StateManager;
 use BuygoLineNotify\Services\Logger;
 use BuygoLineNotify\Services\SettingsService;
+use BuygoLineNotify\Services\ProfileSyncService;
 use BuygoLineNotify\Exceptions\NSLContinuePageRenderException;
 
 if ( ! defined( 'ABSPATH' ) ) {
@@ -403,7 +404,7 @@ class Login_Handler {
 		// Profile Sync（登入時，依設定決定是否同步）
 		$line_profile = $state_data['line_profile'] ?? [];
 		if ( ! empty( $line_profile ) ) {
-			Services\ProfileSyncService::syncProfile(
+			ProfileSyncService::syncProfile(
 				$user_id,
 				array(
 					'displayName' => $line_profile['displayName'] ?? '',
@@ -723,9 +724,12 @@ class Login_Handler {
 			// 用戶已建立，繼續流程（LINE 綁定問題可稍後處理）
 		}
 
-		// 11. 儲存 LINE 頭像 URL 到 user_meta
+		// 11. 儲存 LINE profile 到 user_meta
 		if ( ! empty( $profile['pictureUrl'] ) ) {
 			update_user_meta( $user_id, 'buygo_line_avatar_url', $profile['pictureUrl'] );
+		}
+		if ( ! empty( $profile['displayName'] ) ) {
+			update_user_meta( $user_id, 'buygo_line_display_name', $profile['displayName'] );
 		}
 
 		Logger::log_placeholder(
@@ -815,9 +819,12 @@ class Login_Handler {
 			wp_die( 'LINE 帳號綁定失敗', 'Error', array( 'response' => 500 ) );
 		}
 
-		// 儲存 LINE 頭像 URL
+		// 儲存 LINE profile 到 user_meta
 		if ( ! empty( $profile['pictureUrl'] ) ) {
 			update_user_meta( $user_id, 'buygo_line_avatar_url', $profile['pictureUrl'] );
+		}
+		if ( ! empty( $profile['displayName'] ) ) {
+			update_user_meta( $user_id, 'buygo_line_display_name', $profile['displayName'] );
 		}
 
 		Logger::log_placeholder(
@@ -994,13 +1001,16 @@ class Login_Handler {
 			$this->redirect_with_error( 'link_failed', '綁定失敗，請稍後再試', $redirect_url );
 		}
 
-		// 7. 儲存 LINE 頭像 URL 到 user_meta
+		// 7. 儲存 LINE profile 到 user_meta
 		if ( ! empty( $profile['pictureUrl'] ) ) {
 			update_user_meta( $current_user_id, 'buygo_line_avatar_url', $profile['pictureUrl'] );
 		}
+		if ( ! empty( $profile['displayName'] ) ) {
+			update_user_meta( $current_user_id, 'buygo_line_display_name', $profile['displayName'] );
+		}
 
 		// Profile Sync（綁定時依策略同步）
-		Services\ProfileSyncService::syncProfile(
+		ProfileSyncService::syncProfile(
 			$current_user_id,
 			array(
 				'displayName' => $profile['displayName'] ?? '',
