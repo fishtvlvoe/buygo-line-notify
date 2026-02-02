@@ -236,15 +236,15 @@ final class SettingsPage
      */
     public static function ajax_unbind(): void
     {
-        // 驗證 nonce
-        \check_ajax_referer('buygo_line_unbind', '_ajax_nonce');
-
-        // 取得 user_id 參數
+        // 取得 user_id 參數（需要在 nonce 驗證前取得）
         $user_id = isset($_POST['user_id']) ? (int) $_POST['user_id'] : 0;
 
         if (!$user_id) {
             \wp_send_json_error(['message' => '無效的用戶 ID']);
         }
+
+        // 驗證 nonce（使用包含 user_id 的 action，與前端一致）
+        \check_ajax_referer('buygo_line_unbind_' . $user_id, '_ajax_nonce');
 
         // 權限檢查
         $current_user_id = \get_current_user_id();

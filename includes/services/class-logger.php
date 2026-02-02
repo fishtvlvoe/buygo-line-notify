@@ -237,8 +237,10 @@ class Logger
     }
     /**
      * Placeholder for legacy log calls (does nothing)
+     *
+     * @param mixed ...$args 接受任意參數（向後相容）
      */
-    public static function log_placeholder() {
+    public static function log_placeholder(...$args) {
         // Legacy log calls - currently disabled
     }
 
