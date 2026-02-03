@@ -2,7 +2,7 @@
 /**
  * Plugin Name: Buygo Line Notify
  * Description: Buygo Line Notify plugin scaffold.
- * Version: 0.1.1
+ * Version: 0.1.2
  * Author: acme
  * License: GPLv2 or later
  * Text Domain: buygo-line-notify
@@ -12,7 +12,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-define('BuygoLineNotify_PLUGIN_VERSION', '0.1.1');
+define('BuygoLineNotify_PLUGIN_VERSION', '0.1.2');
 
 define('BuygoLineNotify_PLUGIN_DIR', plugin_dir_path(__FILE__));
 
