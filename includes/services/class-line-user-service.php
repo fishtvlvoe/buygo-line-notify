@@ -58,7 +58,7 @@ class LineUserService {
 
         $user_id = $wpdb->get_var(
             $wpdb->prepare(
-                "SELECT user_id FROM {$table_name} WHERE line_uid = %s LIMIT 1",
+                "SELECT user_id FROM {$table_name} WHERE identifier = %s LIMIT 1",
                 $line_uid
             )
         );
@@ -79,7 +79,7 @@ class LineUserService {
 
         $line_uid = $wpdb->get_var(
             $wpdb->prepare(
-                "SELECT line_uid FROM {$table_name} WHERE user_id = %d LIMIT 1",
+                "SELECT identifier FROM {$table_name} WHERE user_id = %d LIMIT 1",
                 $user_id
             )
         );

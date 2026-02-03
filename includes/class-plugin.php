@@ -35,7 +35,31 @@ final class Plugin
 
         $this->loadDependencies();
 
+        // 自動同步其他外掛的 LINE 綁定資料
+        $this->runAutoMigration();
+
         \add_action('init', [$this, 'onInit']);
+    }
+
+    /**
+     * 自動執行資料遷移（從其他 LINE 外掛同步綁定資料）
+     *
+     * @return void
+     */
+    private function runAutoMigration(): void
+    {
+        // 檢查是否需要同步
+        if (!\BuygoLineNotify\Services\MigrationService::needsMigration()) {
+            return;
+        }
+
+        // 執行同步（靜默模式，不輸出任何內容）
+        try {
+            \BuygoLineNotify\Services\MigrationService::runMigration();
+        } catch (\Exception $e) {
+            // 記錄錯誤但不中斷外掛載入
+            error_log('BuyGo LINE Notify: 自動同步失敗 - ' . $e->getMessage());
+        }
     }
 
     public function onInit(): void
@@ -138,6 +162,7 @@ final class Plugin
         include_once BuygoLineNotify_PLUGIN_DIR . 'includes/services/class-image-uploader.php';
         include_once BuygoLineNotify_PLUGIN_DIR . 'includes/services/class-line-messaging-service.php';
         include_once BuygoLineNotify_PLUGIN_DIR . 'includes/services/class-line-user-service.php';
+        include_once BuygoLineNotify_PLUGIN_DIR . 'includes/services/class-migration-service.php';
 
         // MessagingService (Facade API) 依賴 LineUserService，必須在其之後載入
         include_once BuygoLineNotify_PLUGIN_DIR . 'includes/services/class-messaging-service.php';
