@@ -37,8 +37,8 @@ class NSLIntegration
 
         // Hook 1: MVP 階段 - 使用 NSL 按鈕,隱藏 buygo-line-notify 按鈕
         // 因為我們使用 NSL 的 OAuth 流程和 Callback URL
-        // 使用 priority 999 確保在 LoginButtonService 之後執行
-        add_action('init', [__CLASS__, 'hide_buygo_line_notify_buttons'], 999);
+        // 直接在此處移除 hooks (在 LoginButtonService::register_hooks() 之後執行)
+        self::hide_buygo_line_notify_buttons();
 
         // Hook 2: 在 NSL 登入成功後確保資料同步
         // (保留此 Hook 以處理後台或 API 登入的情況)

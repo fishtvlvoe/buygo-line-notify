@@ -56,6 +56,7 @@ class LineUserService {
         global $wpdb;
         $table_name = $wpdb->prefix . 'buygo_line_users';
 
+        // 優先查詢 wp_buygo_line_users 表
         $user_id = $wpdb->get_var(
             $wpdb->prepare(
                 "SELECT user_id FROM {$table_name} WHERE identifier = %s LIMIT 1",
@@ -63,7 +64,31 @@ class LineUserService {
             )
         );
 
-        return $user_id ? (int) $user_id : null;
+        if ($user_id) {
+            return (int) $user_id;
+        }
+
+        // Fallback: 查詢 NSL (Nextend Social Login) 的 wp_social_users 表
+        $nsl_table = $wpdb->prefix . 'social_users';
+        $nsl_table_exists = $wpdb->get_var($wpdb->prepare(
+            "SHOW TABLES LIKE %s",
+            $nsl_table
+        ));
+
+        if ($nsl_table_exists) {
+            $user_id = $wpdb->get_var(
+                $wpdb->prepare(
+                    "SELECT ID FROM {$nsl_table} WHERE identifier = %s AND type = 'line' LIMIT 1",
+                    $line_uid
+                )
+            );
+
+            if ($user_id) {
+                return (int) $user_id;
+            }
+        }
+
+        return null;
     }
 
     /**
@@ -77,6 +102,7 @@ class LineUserService {
         global $wpdb;
         $table_name = $wpdb->prefix . 'buygo_line_users';
 
+        // 優先查詢 wp_buygo_line_users 表
         $line_uid = $wpdb->get_var(
             $wpdb->prepare(
                 "SELECT identifier FROM {$table_name} WHERE user_id = %d LIMIT 1",
@@ -84,7 +110,31 @@ class LineUserService {
             )
         );
 
-        return $line_uid ?: null;
+        if ($line_uid) {
+            return $line_uid;
+        }
+
+        // Fallback: 查詢 NSL (Nextend Social Login) 的 wp_social_users 表
+        $nsl_table = $wpdb->prefix . 'social_users';
+        $nsl_table_exists = $wpdb->get_var($wpdb->prepare(
+            "SHOW TABLES LIKE %s",
+            $nsl_table
+        ));
+
+        if ($nsl_table_exists) {
+            $line_uid = $wpdb->get_var(
+                $wpdb->prepare(
+                    "SELECT identifier FROM {$nsl_table} WHERE ID = %d AND type = 'line' LIMIT 1",
+                    $user_id
+                )
+            );
+
+            if ($line_uid) {
+                return $line_uid;
+            }
+        }
+
+        return null;
     }
 
     /**
