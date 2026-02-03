@@ -118,6 +118,19 @@ class FluentCartIntegrationAPI {
 		$display_name = \get_user_meta( $user_id, 'buygo_line_display_name', true );
 		$avatar_url   = \get_user_meta( $user_id, 'buygo_line_avatar_url', true );
 
+		// Fallback: 如果沒有 buygo_line_display_name，嘗試從 WordPress 用戶資料取得
+		if ( empty( $display_name ) ) {
+			$user = \get_user_by( 'id', $user_id );
+			if ( $user ) {
+				$display_name = $user->display_name ?: $user->user_login;
+			}
+		}
+
+		// Fallback: 如果沒有頭像，使用 WordPress 預設頭像
+		if ( empty( $avatar_url ) ) {
+			$avatar_url = \get_avatar_url( $user_id, [ 'size' => 96 ] );
+		}
+
 		return new \WP_REST_Response(
 			[
 				'success'      => true,
