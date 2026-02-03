@@ -131,11 +131,15 @@ class FluentCartIntegrationAPI {
 			$avatar_url = \get_avatar_url( $user_id, [ 'size' => 96 ] );
 		}
 
+		// 取得 LINE UID（支援兩種欄位名稱）
+		// buygo_line_users 表使用 line_uid，NSL 使用 identifier
+		$line_uid = $line_data->line_uid ?? $line_data->identifier ?? '';
+
 		return new \WP_REST_Response(
 			[
 				'success'      => true,
 				'is_linked'    => true,
-				'line_uid'     => $line_data->line_uid ?? '',
+				'line_uid'     => $line_uid,
 				'display_name' => $display_name ?: '未知',
 				'avatar_url'   => $avatar_url ?: '',
 				'linked_at'    => $line_data->created_at ?? '',
