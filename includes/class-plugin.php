@@ -84,6 +84,10 @@ final class Plugin
         // 註冊 FluentCart 客戶檔案整合
         \BuygoLineNotify\Integrations\FluentCartCustomerProfileIntegration::register_hooks();
 
+        // 註冊 NSL (Nextend Social Login) 整合
+        // 提供過渡期間的自動重新授權和資料清理功能
+        \BuygoLineNotify\Integrations\NSLIntegration::init();
+
         // 初始化後台管理功能
         $this->initAdminFeatures();
 
