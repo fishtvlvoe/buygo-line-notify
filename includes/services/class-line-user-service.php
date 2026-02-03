@@ -254,6 +254,24 @@ class LineUserService {
             )
         );
 
+        // Fallback: 查詢 NSL (Nextend Social Login) 的 wp_social_users 表
+        if (!$binding) {
+            $nsl_table = $wpdb->prefix . 'social_users';
+            $nsl_binding = $wpdb->get_row(
+                $wpdb->prepare(
+                    "SELECT ID as id, user_id, identifier as line_uid, date as created_at, date as updated_at
+                     FROM {$nsl_table}
+                     WHERE user_id = %d AND type = 'line'
+                     LIMIT 1",
+                    $user_id
+                )
+            );
+
+            if ($nsl_binding) {
+                return $nsl_binding;
+            }
+        }
+
         return $binding ?: null;
     }
 
