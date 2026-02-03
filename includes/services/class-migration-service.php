@@ -168,10 +168,10 @@ class MigrationService
 
         // 取得 LINE 登入記錄
         $bindings = $wpdb->get_results("
-            SELECT ID as user_id, identifier as line_uid, date_added
+            SELECT ID as user_id, identifier as line_uid, register_date as date_added
             FROM {$source_table}
-            WHERE provider = 'line'
-            ORDER BY date_added ASC
+            WHERE type = 'line'
+            ORDER BY register_date ASC
         ");
 
         if (!$bindings) {
