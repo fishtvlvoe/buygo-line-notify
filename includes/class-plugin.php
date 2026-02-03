@@ -206,6 +206,7 @@ final class Plugin
 
         // 載入 Integration 類別
         include_once BuygoLineNotify_PLUGIN_DIR . 'includes/integrations/class-fluentcart-customer-profile-integration.php';
+        include_once BuygoLineNotify_PLUGIN_DIR . 'includes/integrations/class-nsl-integration.php';
 
         // 載入 Facade（供其他外掛使用）
         include_once BuygoLineNotify_PLUGIN_DIR . 'includes/class-buygo-line-notify.php';

@@ -35,10 +35,10 @@ class NSLIntegration
             return;
         }
 
-        // Hook 1: 隱藏 NSL 的前台登入按鈕 (只使用 buygo-line-notify 的登入介面)
-        add_filter('nsl_is_provider_enabled_line', '__return_false', 9999);
-        add_action('wp_head', [__CLASS__, 'hide_nsl_buttons_css'], 9999);
-        add_action('login_head', [__CLASS__, 'hide_nsl_buttons_css'], 9999);
+        // Hook 1: MVP 階段 - 使用 NSL 按鈕,隱藏 buygo-line-notify 按鈕
+        // 因為我們使用 NSL 的 OAuth 流程和 Callback URL
+        // 使用 priority 999 確保在 LoginButtonService 之後執行
+        add_action('init', [__CLASS__, 'hide_buygo_line_notify_buttons'], 999);
 
         // Hook 2: 在 NSL 登入成功後確保資料同步
         // (保留此 Hook 以處理後台或 API 登入的情況)
@@ -50,22 +50,24 @@ class NSLIntegration
     }
 
     /**
-     * 隱藏 NSL 前台登入按鈕 (CSS)
+     * 隱藏 buygo-line-notify 的登入按鈕
      *
-     * 透過 CSS 隱藏所有 NSL 相關的 LINE 登入按鈕
-     * 只保留 buygo-line-notify 提供的登入介面
+     * MVP 階段使用 NSL 的 OAuth 流程,因此移除 buygo-line-notify 的登入按鈕 hooks
+     * 避免 Callback URL 衝突
      */
-    public static function hide_nsl_buttons_css(): void
+    public static function hide_buygo_line_notify_buttons(): void
     {
-        echo '<style type="text/css">
-            /* 隱藏 NSL LINE 登入按鈕 */
-            .nsl-container .nsl-button-line,
-            .nsl-container-block .nsl-button-line,
-            a[data-plugin="nsl"][data-provider="line"],
-            .nsl-button[data-provider="line"] {
-                display: none !important;
-            }
-        </style>';
+        // 取得 LoginButtonService 使用的 priority
+        $position = \BuygoLineNotify\Services\SettingsService::get_login_button_position();
+        $priority = ($position === 'after') ? 20 : 5;
+
+        // 移除 LoginButtonService 註冊的所有 hooks (必須指定正確的 priority)
+        remove_action('fluent_community/before_auth_form_header', ['BuygoLineNotify\\Services\\LoginButtonService', 'render_fluent_community_button'], $priority);
+        remove_action('lrm/login_form/before', ['BuygoLineNotify\\Services\\LoginButtonService', 'render_lrm_button'], $priority);
+        remove_action('login_form', ['BuygoLineNotify\\Services\\LoginButtonService', 'render_wp_login_button'], $priority);
+        remove_action('register_form', ['BuygoLineNotify\\Services\\LoginButtonService', 'render_wp_login_button'], $priority);
+
+        error_log('[NSL Integration] buygo-line-notify 登入按鈕已停用 (priority: ' . $priority . '),使用 NSL 按鈕');
     }
 
     /**
@@ -123,12 +125,16 @@ class NSLIntegration
      * Hook: nsl_login
      *
      * @param int $user_id WordPress User ID
-     * @param string $provider 登入提供者 (line, facebook, google, etc.)
+     * @param mixed $provider 登入提供者 (可能是 string 或 NextendSocialPROProviderLine 物件)
      */
-    public static function ensure_sync_after_login(int $user_id, string $provider): void
+    public static function ensure_sync_after_login(int $user_id, $provider): void
     {
+        // 取得 provider 名稱 (可能是 string 或物件)
+        $provider_name = is_string($provider) ? $provider : (method_exists($provider, 'getId') ? $provider->getId() : '');
+
         // 只處理 LINE 登入
-        if ($provider !== 'line') {
+        if ($provider_name !== 'line') {
+            error_log('[NSL Integration] Skipping sync for provider: ' . $provider_name);
             return;
         }
 
