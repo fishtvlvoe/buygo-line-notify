@@ -98,18 +98,10 @@ class Webhook_API
             }
         }
 
-        // 第五步：背景處理其他事件
+        // 第五步：背景處理其他事件（使用 WP Cron 避免 fastcgi_finish_request 時序問題）
         if (!empty($remaining_events)) {
-            if (function_exists('fastcgi_finish_request')) {
-                // FastCGI 環境：先返回 200，然後背景處理
-                add_action('shutdown', function () use ($remaining_events, $handler) {
-                    fastcgi_finish_request(); // 釋放連線
-                    $handler->process_events($remaining_events);
-                });
-            } else {
-                // 非 FastCGI 環境：使用 WP_Cron
-                wp_schedule_single_event(time(), 'buygo_process_line_webhook', [$remaining_events]);
-            }
+            // 使用 WP_Cron 在背景處理，確保 WordPress REST API 已發送 200 回應給 LINE
+            wp_schedule_single_event(time(), 'buygo_process_line_webhook', [$remaining_events]);
         }
 
         // 第六步：立即返回 200（LINE 要求 5 秒內回應）
