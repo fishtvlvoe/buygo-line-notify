@@ -89,8 +89,8 @@ class Webhook_API
             $event_type = $event['type'] ?? '';
             $message_type = $event['message']['type'] ?? '';
 
-            // 文字訊息立即同步處理（用於關鍵字回覆）
-            if ($event_type === 'message' && $message_type === 'text') {
+            // 文字訊息和圖片訊息立即同步處理（需要即時回覆）
+            if ($event_type === 'message' && in_array($message_type, ['text', 'image'], true)) {
                 $handler->process_events([$event]);
             } else {
                 // 其他事件放入背景處理
