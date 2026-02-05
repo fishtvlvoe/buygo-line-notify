@@ -249,7 +249,11 @@ class LineUserService {
 
         $binding = $wpdb->get_row(
             $wpdb->prepare(
-                "SELECT * FROM {$table_name} WHERE user_id = %d LIMIT 1",
+                "SELECT ID as id, type, identifier as line_uid, user_id,
+                        COALESCE(created_at, register_date) as created_at,
+                        COALESCE(updated_at, link_date) as updated_at
+                 FROM {$table_name}
+                 WHERE user_id = %d LIMIT 1",
                 $user_id
             )
         );
