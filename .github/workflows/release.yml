@@ -1,0 +1,142 @@
+name: Create Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write  # 允許建立 Release 和上傳檔案
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Get version from tag
+        id: get_version
+        run: echo "VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '7.4'
+          extensions: mbstring, xml
+
+      - name: Create plugin zip
+        run: |
+          mkdir -p release
+
+          # 使用 rsync 排除不需要的目錄
+          rsync -av --exclude='release' --exclude='.git' --exclude='.github' . release/buygo-line-notify/
+
+          # 進入目錄清理開發檔案
+          cd release/buygo-line-notify
+
+          # 刪除開發目錄
+          rm -rf .planning .claude .vscode .idea
+          rm -rf node_modules vendor tests bin
+          rm -rf test-scripts docs uploads
+
+          # 刪除 .md 檔案 (保留 README.md)
+          find . -maxdepth 1 -name "*.md" ! -name "README.md" -exec rm -f {} \;
+
+          # 刪除開發腳本
+          find . -maxdepth 1 \( -name "test-*.php" -o -name "check-*.php" -o -name "debug-*.php" -o -name "verify-*.php" -o -name "simple-*.php" \) -exec rm -f {} \;
+
+          # 刪除建置工具
+          rm -f build-release.sh release.sh composer.json composer.lock
+          rm -f phpunit.xml phpunit-unit.xml phpunit.xml.dist .phpunit.result.cache
+          rm -f .zipignore .gitignore
+
+          # 刪除 .DS_Store
+          find . -name ".DS_Store" -exec rm -f {} \;
+
+          # 刪除舊的 updater 類別（已被 auto-updater 取代）
+          rm -f includes/class-updater.php
+
+          # 建立 ZIP
+          cd ..
+          zip -r buygo-line-notify-${{ steps.get_version.outputs.VERSION }}.zip buygo-line-notify/
+
+          # 計算檔案大小和 SHA256
+          FILE_SIZE=$(du -h "buygo-line-notify-${{ steps.get_version.outputs.VERSION }}.zip" | cut -f1)
+          FILE_SHA256=$(sha256sum "buygo-line-notify-${{ steps.get_version.outputs.VERSION }}.zip" | cut -d' ' -f1)
+          echo "FILE_SIZE=$FILE_SIZE" >> $GITHUB_ENV
+          echo "FILE_SHA256=$FILE_SHA256" >> $GITHUB_ENV
+          echo "Package size: $FILE_SIZE"
+          echo "SHA256: $FILE_SHA256"
+
+      - name: Create Release
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ github.ref }}
+          release_name: Buygo Line Notify v${{ steps.get_version.outputs.VERSION }}
+          draft: false
+          prerelease: false
+          body: |
+            ## Buygo Line Notify v${{ steps.get_version.outputs.VERSION }}
+
+            ### 更新內容
+            請查看 CHANGELOG.md 了解詳細更新內容。
+
+            ### 安裝方法
+            1. 下載 `buygo-line-notify-${{ steps.get_version.outputs.VERSION }}.zip`
+            2. 在 WordPress 後台上傳並啟用外掛
+            3. 設定 LINE Channel 相關參數
+
+            ### 自動更新
+            此版本支援自動更新,安裝後會在有新版本時自動提示更新。
+
+      - name: Upload Release Asset
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./release/buygo-line-notify-${{ steps.get_version.outputs.VERSION }}.zip
+          asset_name: buygo-line-notify-${{ steps.get_version.outputs.VERSION }}.zip
+          asset_content_type: application/zip
+
+      - name: Notify Cloudflare Workers Update API
+        if: success()
+        run: |
+          # 通知 Cloudflare Workers 更新 API 有新版本
+          curl -X POST "${{ secrets.CLOUDFLARE_WORKER_WEBHOOK_URL }}" \
+            -H "Content-Type: application/json" \
+            -H "X-Update-Token: ${{ secrets.CLOUDFLARE_UPDATE_TOKEN }}" \
+            -d '{
+              "plugin": "buygo-line-notify",
+              "version": "${{ steps.get_version.outputs.VERSION }}",
+              "download_url": "https://github.com/fishtvlvoe/buygo-line-notify/releases/download/v${{ steps.get_version.outputs.VERSION }}/buygo-line-notify-${{ steps.get_version.outputs.VERSION }}.zip",
+              "sha256": "${{ env.FILE_SHA256 }}",
+              "size": "${{ env.FILE_SIZE }}",
+              "tested": "6.4",
+              "requires": "5.8",
+              "requires_php": "7.4"
+            }' || echo "⚠️ Cloudflare Workers webhook 失敗（不影響發布）"
+
+      - name: Send LINE Notification
+        if: always()
+        run: |
+          STATUS="${{ job.status }}"
+          if [ "$STATUS" == "success" ]; then
+            EMOJI="🎉"
+            MESSAGE="Buygo Line Notify v${{ steps.get_version.outputs.VERSION }} 發布成功！"
+          else
+            EMOJI="❌"
+            MESSAGE="Buygo Line Notify v${{ steps.get_version.outputs.VERSION }} 發布失敗"
+          fi
+
+          curl -X POST https://notify-api.line.me/api/notify \
+            -H "Authorization: Bearer ${{ secrets.LINE_NOTIFY_TOKEN }}" \
+            -F "message=${EMOJI} ${MESSAGE}
+          📦 大小: ${{ env.FILE_SIZE }}
+          🔐 SHA256: ${{ env.FILE_SHA256 }}
+          🔗 ${{ steps.create_release.outputs.html_url }}" \
+            || echo "⚠️ LINE 通知失敗（不影響發布）"
