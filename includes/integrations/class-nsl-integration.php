@@ -48,10 +48,14 @@ class NSLIntegration
         add_action('delete_user', [__CLASS__, 'cleanup_on_user_delete'], 10, 1);
         add_action('deleted_user', [__CLASS__, 'cleanup_after_user_deleted'], 10, 1);
 
-        // Hook 4: 允許 auto_link 即使用戶已有不同的 LINE 綁定
-        // 這是核心修復: 當用戶填寫已存在的 Email 時,NSL 會檢查是否可以 auto_link
-        // 我們需要允許它,即使用戶之前綁定過不同的 LINE 帳號
-        // 參考: wp-content/plugins/nextend-facebook-connect/includes/user.php line 718
+        // Hook 4: 在 auto_link 之前移除舊的 LINE 綁定
+        // 問題: NSL 的 linkUserToProviderIdentifier() 會檢查用戶是否已綁定不同的 LINE ID
+        // 如果已綁定,會返回 false,導致 auto_link 失敗
+        // 解決: 在 auto_link 之前先刪除舊綁定,允許綁定新的 LINE 帳號
+        // 參考: wp-content/plugins/nextend-facebook-connect/includes/provider.php line 436-445
+        add_action('nsl_line_before_register', [__CLASS__, 'remove_old_line_binding_before_autolink'], 5, 1);
+
+        // Hook 5: 允許 auto_link
         add_filter('nsl_line_auto_link_allowed', '__return_true', 999);
     }
 
@@ -315,18 +319,102 @@ class NSLIntegration
     }
 
     /**
-     * 處理 Email 重複的情況（已棄用 - 改用 nsl_line_auto_link_allowed filter）
+     * 在 auto_link 之前移除舊的 LINE 綁定
      *
-     * @deprecated 2.0.0 使用 nsl_line_auto_link_allowed filter 取代
-     * @param bool $hasError 是否有錯誤
-     * @param mixed $provider 登入提供者
-     * @param WP_Error $errors 錯誤物件
-     * @return bool 修改後的錯誤狀態
+     * Hook: nsl_line_before_register
+     *
+     * 核心問題:
+     * - NSL 的 linkUserToProviderIdentifier() 會檢查用戶是否已綁定不同的 LINE ID
+     * - 如果已綁定,返回 false,導致 auto_link 失敗
+     *
+     * 解決方案:
+     * - 當檢測到 Email 已存在時,刪除舊的 LINE 綁定
+     * - 允許 NSL 綁定新的 LINE 帳號
+     *
+     * @param array $userData NSL 準備註冊的用戶資料
+     */
+    public static function remove_old_line_binding_before_autolink(array $userData): void
+    {
+        // 檢查是否為 auto_link 情境 (Email 已存在)
+        $email = $userData['user_email'] ?? '';
+        if (empty($email)) {
+            return;
+        }
+
+        // 檢查 Email 是否已存在
+        $existing_user = get_user_by('email', $email);
+        if (!$existing_user) {
+            return; // 新用戶,不需要處理
+        }
+
+        global $wpdb;
+
+        // 檢查現有用戶是否已綁定 LINE
+        $old_line_id = $wpdb->get_var($wpdb->prepare(
+            "SELECT identifier FROM {$wpdb->prefix}social_users
+             WHERE ID = %d AND type = 'line'",
+            $existing_user->ID
+        ));
+
+        if (!$old_line_id) {
+            return; // 沒有舊綁定,不需要處理
+        }
+
+        // 取得當前要綁定的 LINE ID
+        $new_line_id = $userData['identifier'] ?? '';
+        if (empty($new_line_id)) {
+            error_log('[NSL Integration] Unable to get new LINE identifier');
+            return;
+        }
+
+        // 如果是相同的 LINE ID,不需要處理
+        if ($old_line_id === $new_line_id) {
+            error_log(sprintf(
+                '[NSL Integration] User %d already linked to the same LINE account',
+                $existing_user->ID
+            ));
+            return;
+        }
+
+        // 刪除舊的 LINE 綁定
+        $deleted = $wpdb->delete(
+            $wpdb->prefix . 'social_users',
+            [
+                'ID' => $existing_user->ID,
+                'type' => 'line',
+            ],
+            ['%d', '%s']
+        );
+
+        if ($deleted) {
+            error_log(sprintf(
+                '[NSL Integration] Removed old LINE binding for user %d (old: %s, new: %s) to allow auto_link',
+                $existing_user->ID,
+                substr($old_line_id, 0, 20) . '...',
+                substr($new_line_id, 0, 20) . '...'
+            ));
+
+            // 同時清除 buygo_line_users 中的舊綁定
+            $wpdb->delete(
+                $wpdb->prefix . 'buygo_line_users',
+                ['user_id' => $existing_user->ID],
+                ['%d']
+            );
+        } else {
+            error_log(sprintf(
+                '[NSL Integration] Failed to remove old LINE binding for user %d',
+                $existing_user->ID
+            ));
+        }
+    }
+
+    /**
+     * 處理 Email 重複的情況（已棄用）
+     *
+     * @deprecated 2.0.0 改用 remove_old_line_binding_before_autolink()
      */
     public static function handle_duplicate_email(bool $hasError, $provider, $errors): bool
     {
-        // 此方法已棄用,改用 nsl_line_auto_link_allowed filter
-        // NSL 會自動處理 auto_link 邏輯
         return $hasError;
     }
 
