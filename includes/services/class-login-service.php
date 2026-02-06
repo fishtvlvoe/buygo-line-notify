@@ -340,38 +340,21 @@ class LoginService {
 	private function should_use_nsl(): bool {
 		// 檢查 NSL 外掛是否啟用
 		if ( ! class_exists( 'NextendSocialLogin' ) ) {
-			Logger::log_placeholder( 'info', array( 'message' => 'NSL not found, using native LINE Login' ) );
 			return false;
 		}
 
 		// 檢查 LINE provider 是否啟用
 		// NSL 的 LINE provider class 通常是 NextendSocialProviderLINE
 		if ( ! class_exists( 'NextendSocialProviderLINE' ) ) {
-			Logger::log_placeholder( 'info', array( 'message' => 'NSL LINE Provider not found, using native LINE Login' ) );
-			return false;
-		}
-
-		// 檢查 getProviderByType 方法是否存在（NSL API）
-		if ( ! method_exists( 'NextendSocialLogin', 'getProviderByType' ) ) {
-			Logger::log_placeholder( 'info', array( 'message' => 'NSL API not available, using native LINE Login' ) );
 			return false;
 		}
 
 		// 檢查是否在設定中明確停用 NSL fallback
 		$disable_nsl = SettingsService::get( 'disable_nsl_fallback', false );
 		if ( $disable_nsl ) {
-			Logger::log_placeholder( 'info', array( 'message' => 'NSL disabled in settings, using native LINE Login' ) );
 			return false;
 		}
 
-		// 檢查 NSL LINE 是否已配置（有 Channel ID）
-		$nsl_settings = \get_option( 'nextend_social_login', array() );
-		if ( empty( $nsl_settings['line']['app_id'] ?? '' ) && empty( $nsl_settings['line']['client_id'] ?? '' ) ) {
-			Logger::log_placeholder( 'info', array( 'message' => 'NSL LINE not configured, using native LINE Login' ) );
-			return false;
-		}
-
-		Logger::log_placeholder( 'info', array( 'message' => 'NSL LINE is configured and available' ) );
 		return true;
 	}
 
