@@ -48,12 +48,10 @@ class NSLIntegration
         add_action('delete_user', [__CLASS__, 'cleanup_on_user_delete'], 10, 1);
         add_action('deleted_user', [__CLASS__, 'cleanup_after_user_deleted'], 10, 1);
 
-        // Hook 4: 在 auto_link 之前移除舊的 LINE 綁定
-        // 問題: NSL 的 linkUserToProviderIdentifier() 會檢查用戶是否已綁定不同的 LINE ID
-        // 如果已綁定,會返回 false,導致 auto_link 失敗
-        // 解決: 在 auto_link 之前先刪除舊綁定,允許綁定新的 LINE 帳號
-        // 參考: wp-content/plugins/nextend-facebook-connect/includes/provider.php line 436-445
-        add_action('nsl_line_before_register', [__CLASS__, 'remove_old_line_binding_before_autolink'], 5, 1);
+        // Hook 4: 攔截用戶匹配流程,在 auto_link 前移除舊的 LINE 綁定
+        // 時機: NSL 檢測到 Email 已存在後,在執行 auto_link 之前
+        // 參考: wp-content/plugins/nextend-facebook-connect/includes/user.php line 123
+        add_filter('nsl_match_social_account_to_user_id', [__CLASS__, 'remove_old_line_binding_before_match'], 10, 3);
 
         // Hook 5: 允許 auto_link
         add_filter('nsl_line_auto_link_allowed', '__return_true', 999);
@@ -319,32 +317,33 @@ class NSLIntegration
     }
 
     /**
-     * 在 auto_link 之前移除舊的 LINE 綁定
+     * 在用戶匹配時移除舊的 LINE 綁定
      *
-     * Hook: nsl_line_before_register
+     * Hook: nsl_match_social_account_to_user_id
      *
      * 核心問題:
      * - NSL 的 linkUserToProviderIdentifier() 會檢查用戶是否已綁定不同的 LINE ID
      * - 如果已綁定,返回 false,導致 auto_link 失敗
      *
      * 解決方案:
-     * - 當檢測到 Email 已存在時,刪除舊的 LINE 綁定
-     * - 允許 NSL 綁定新的 LINE 帳號
+     * - 在 NSL 匹配用戶時,如果檢測到用戶已綁定不同的 LINE ID
+     * - 刪除舊綁定,允許綁定新的 LINE 帳號
      *
-     * @param array $userData NSL 準備註冊的用戶資料
+     * @param int|false $user_id 匹配到的用戶 ID (如果 Email 存在)
+     * @param object $user_data NSL 用戶資料物件
+     * @param object $provider NSL Provider 物件
+     * @return int|false 返回用戶 ID (允許繼續) 或 false (阻止)
      */
-    public static function remove_old_line_binding_before_autolink(array $userData): void
+    public static function remove_old_line_binding_before_match($user_id, $user_data, $provider)
     {
-        // 檢查是否為 auto_link 情境 (Email 已存在)
-        $email = $userData['user_email'] ?? '';
-        if (empty($email)) {
-            return;
+        // 只處理 LINE provider
+        if (!method_exists($provider, 'getId') || $provider->getId() !== 'line') {
+            return $user_id;
         }
 
-        // 檢查 Email 是否已存在
-        $existing_user = get_user_by('email', $email);
-        if (!$existing_user) {
-            return; // 新用戶,不需要處理
+        // 如果沒有匹配到用戶,不需要處理
+        if ($user_id === false) {
+            return $user_id;
         }
 
         global $wpdb;
@@ -353,34 +352,34 @@ class NSLIntegration
         $old_line_id = $wpdb->get_var($wpdb->prepare(
             "SELECT identifier FROM {$wpdb->prefix}social_users
              WHERE ID = %d AND type = 'line'",
-            $existing_user->ID
+            $user_id
         ));
 
         if (!$old_line_id) {
-            return; // 沒有舊綁定,不需要處理
+            return $user_id; // 沒有舊綁定,直接允許 auto_link
         }
 
         // 取得當前要綁定的 LINE ID
-        $new_line_id = $userData['identifier'] ?? '';
+        $new_line_id = $user_data->getAuthUserData('id');
         if (empty($new_line_id)) {
-            error_log('[NSL Integration] Unable to get new LINE identifier');
-            return;
+            error_log('[NSL Integration] Unable to get new LINE identifier from provider');
+            return $user_id;
         }
 
         // 如果是相同的 LINE ID,不需要處理
         if ($old_line_id === $new_line_id) {
             error_log(sprintf(
                 '[NSL Integration] User %d already linked to the same LINE account',
-                $existing_user->ID
+                $user_id
             ));
-            return;
+            return $user_id;
         }
 
         // 刪除舊的 LINE 綁定
         $deleted = $wpdb->delete(
             $wpdb->prefix . 'social_users',
             [
-                'ID' => $existing_user->ID,
+                'ID' => $user_id,
                 'type' => 'line',
             ],
             ['%d', '%s']
@@ -389,7 +388,7 @@ class NSLIntegration
         if ($deleted) {
             error_log(sprintf(
                 '[NSL Integration] Removed old LINE binding for user %d (old: %s, new: %s) to allow auto_link',
-                $existing_user->ID,
+                $user_id,
                 substr($old_line_id, 0, 20) . '...',
                 substr($new_line_id, 0, 20) . '...'
             ));
@@ -397,15 +396,17 @@ class NSLIntegration
             // 同時清除 buygo_line_users 中的舊綁定
             $wpdb->delete(
                 $wpdb->prefix . 'buygo_line_users',
-                ['user_id' => $existing_user->ID],
+                ['user_id' => $user_id],
                 ['%d']
             );
         } else {
             error_log(sprintf(
                 '[NSL Integration] Failed to remove old LINE binding for user %d',
-                $existing_user->ID
+                $user_id
             ));
         }
+
+        return $user_id; // 返回用戶 ID,允許 auto_link 繼續
     }
 
     /**
