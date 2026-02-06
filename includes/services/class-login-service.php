@@ -344,8 +344,10 @@ class LoginService {
 		}
 
 		// 檢查 LINE provider 是否啟用
-		// NSL 的 LINE provider class 通常是 NextendSocialProviderLINE
-		if ( ! class_exists( 'NextendSocialProviderLINE' ) ) {
+		// NSL Pro: NextendSocialPROProviderLine
+		// NSL Free: NextendSocialProviderLine (dummy class)
+		$line_provider_exists = class_exists( 'NextendSocialPROProviderLine' ) || class_exists( 'NextendSocialProviderLine' );
+		if ( ! $line_provider_exists ) {
 			return false;
 		}
 
