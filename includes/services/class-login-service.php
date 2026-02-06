@@ -363,89 +363,22 @@ class LoginService {
 	/**
 	 * 產生 NSL LINE authorize URL
 	 *
+	 * 注意：直接使用手動構建的 URL，不使用 NSL 的 getConnectUrl/getLoginUrl
+	 * 原因：NSL 的這些方法會檢查用戶是否已綁定，如果已綁定會返回 bypass_cache URL
+	 * 而不是真正的 OAuth URL。我們需要強制觸發 OAuth 流程。
+	 *
 	 * @param string $redirect_url 授權完成後的導向 URL
 	 * @return string NSL LINE authorize URL
 	 */
 	private function get_nsl_authorize_url( string $redirect_url ): string {
-		// 使用 NSL 的 API 來生成正確的 URL
-		// NSL Pro 和 Free 版本都支援這個方法
-
-		// 檢查用戶是否已登入
 		$is_logged_in = is_user_logged_in();
 		$mode = $is_logged_in ? 'connect' : 'login';
 
-		try {
-			// 嘗試使用 NSL 的 Provider API
-			if ( class_exists( 'NextendSocialLogin' ) && method_exists( 'NextendSocialLogin', 'getProviderByType' ) ) {
-				$provider = \NextendSocialLogin::getProviderByType( 'line' );
-
-				if ( $provider ) {
-					// 設定 redirect_to 參數
-					if ( ! empty( $redirect_url ) ) {
-						$_REQUEST['redirect_to'] = $redirect_url;
-					}
-
-					// 根據用戶狀態使用不同的方法
-					if ( $is_logged_in && method_exists( $provider, 'getConnectUrl' ) ) {
-						// 已登入用戶：使用 Connect URL
-						$nsl_url = $provider->getConnectUrl();
-
-						// 強制加入 prompt=consent,避免 NSL 跳過 OAuth 認證
-						// 這確保即使用戶已有綁定,也會跳轉到 LINE 認證頁面
-						$nsl_url = add_query_arg( 'prompt', 'consent', $nsl_url );
-
-						Logger::log_placeholder(
-							'info',
-							array(
-								'message' => 'NSL LINE connect URL generated (logged in user)',
-								'url'     => $nsl_url,
-								'user_id' => get_current_user_id(),
-								'forced_consent' => true,
-							)
-						);
-
-						return $nsl_url;
-
-					} elseif ( method_exists( $provider, 'getLoginUrl' ) ) {
-						// 未登入用戶：使用 Login URL
-						$nsl_url = $provider->getLoginUrl();
-
-						// 強制加入 prompt=consent,避免 NSL 跳過 OAuth 認證
-						$nsl_url = add_query_arg( 'prompt', 'consent', $nsl_url );
-
-						Logger::log_placeholder(
-							'info',
-							array(
-								'message' => 'NSL LINE login URL generated via API',
-								'url'     => $nsl_url,
-								'forced_consent' => true,
-							)
-						);
-
-						return $nsl_url;
-					}
-				}
-			}
-		} catch ( \Throwable $e ) {
-			// PHP 7.0+ 使用 Throwable 同時捕捉 Exception 和 Error
-			// 這包括 Fatal Error（方法不存在、類別載入失敗等）
-			Logger::log_placeholder(
-				'warning',
-				array(
-					'message' => 'Failed to use NSL API, falling back to manual URL',
-					'error'   => $e->getMessage(),
-					'file'    => $e->getFile(),
-					'line'    => $e->getLine(),
-					'mode'    => $mode,
-				)
-			);
-		}
-
-		// Fallback：手動構建 URL
-		// NSL 的 connect 和 login 使用相同的 URL 格式，由 session 狀態決定
+		// 直接構建 NSL LINE 授權 URL
+		// 使用 loginSocial=line 參數觸發 NSL 的 LINE OAuth 流程
 		$params = array(
 			'loginSocial' => 'line',
-			'prompt'      => 'consent', // 強制重新授權
+			'prompt'      => 'consent', // 強制重新授權，確保跳轉到 LINE 認證頁面
 		);
 
 		if ( ! empty( $redirect_url ) ) {
@@ -457,9 +390,9 @@ class LoginService {
 		Logger::log_placeholder(
 			'info',
 			array(
-				'message' => "NSL LINE {$mode} URL generated manually",
-				'url'     => $nsl_url,
-				'is_logged_in' => $is_logged_in,
+				'message'        => "NSL LINE {$mode} URL generated",
+				'url'            => $nsl_url,
+				'is_logged_in'   => $is_logged_in,
 				'forced_consent' => true,
 			)
 		);
