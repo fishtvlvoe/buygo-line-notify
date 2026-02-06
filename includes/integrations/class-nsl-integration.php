@@ -336,13 +336,19 @@ class NSLIntegration
      */
     public static function remove_old_line_binding_before_match($user_id, $user_data, $provider)
     {
+        error_log('[NSL Integration] remove_old_line_binding_before_match() CALLED');
+        error_log('[NSL Integration] user_id: ' . var_export($user_id, true));
+        error_log('[NSL Integration] provider type: ' . (method_exists($provider, 'getId') ? $provider->getId() : 'unknown'));
+
         // 只處理 LINE provider
         if (!method_exists($provider, 'getId') || $provider->getId() !== 'line') {
+            error_log('[NSL Integration] Not LINE provider, skipping');
             return $user_id;
         }
 
         // 如果沒有匹配到用戶,不需要處理
         if ($user_id === false) {
+            error_log('[NSL Integration] user_id is false, no email match found');
             return $user_id;
         }
 
@@ -355,12 +361,17 @@ class NSLIntegration
             $user_id
         ));
 
+        error_log('[NSL Integration] Old LINE binding check: ' . var_export($old_line_id, true));
+
         if (!$old_line_id) {
+            error_log('[NSL Integration] No old binding found, allowing auto_link');
             return $user_id; // 沒有舊綁定,直接允許 auto_link
         }
 
         // 取得當前要綁定的 LINE ID
         $new_line_id = $user_data->getAuthUserData('id');
+        error_log('[NSL Integration] New LINE ID from OAuth: ' . var_export($new_line_id, true));
+
         if (empty($new_line_id)) {
             error_log('[NSL Integration] Unable to get new LINE identifier from provider');
             return $user_id;
@@ -375,6 +386,13 @@ class NSLIntegration
             return $user_id;
         }
 
+        error_log(sprintf(
+            '[NSL Integration] CONFLICT DETECTED - User %d has old LINE ID, attempting to bind new LINE ID',
+            $user_id
+        ));
+        error_log('[NSL Integration] Old LINE ID: ' . substr($old_line_id, 0, 20) . '...');
+        error_log('[NSL Integration] New LINE ID: ' . substr($new_line_id, 0, 20) . '...');
+
         // 刪除舊的 LINE 綁定
         $deleted = $wpdb->delete(
             $wpdb->prefix . 'social_users',
@@ -385,27 +403,42 @@ class NSLIntegration
             ['%d', '%s']
         );
 
+        error_log('[NSL Integration] DELETE result: ' . var_export($deleted, true));
+        error_log('[NSL Integration] Last SQL error: ' . var_export($wpdb->last_error, true));
+
         if ($deleted) {
+            // 驗證刪除是否成功
+            $verify_deleted = $wpdb->get_var($wpdb->prepare(
+                "SELECT COUNT(*) FROM {$wpdb->prefix}social_users
+                 WHERE ID = %d AND type = 'line'",
+                $user_id
+            ));
+
+            error_log('[NSL Integration] Verification after delete - remaining records: ' . $verify_deleted);
+
             error_log(sprintf(
-                '[NSL Integration] Removed old LINE binding for user %d (old: %s, new: %s) to allow auto_link',
+                '[NSL Integration] ✅ Removed old LINE binding for user %d (old: %s, new: %s) to allow auto_link',
                 $user_id,
                 substr($old_line_id, 0, 20) . '...',
                 substr($new_line_id, 0, 20) . '...'
             ));
 
             // 同時清除 buygo_line_users 中的舊綁定
-            $wpdb->delete(
+            $buygo_deleted = $wpdb->delete(
                 $wpdb->prefix . 'buygo_line_users',
                 ['user_id' => $user_id],
                 ['%d']
             );
+
+            error_log('[NSL Integration] buygo_line_users DELETE result: ' . var_export($buygo_deleted, true));
         } else {
             error_log(sprintf(
-                '[NSL Integration] Failed to remove old LINE binding for user %d',
+                '[NSL Integration] ❌ Failed to remove old LINE binding for user %d - wpdb->delete returned false/0',
                 $user_id
             ));
         }
 
+        error_log('[NSL Integration] Returning user_id: ' . $user_id . ' to continue auto_link flow');
         return $user_id; // 返回用戶 ID,允許 auto_link 繼續
     }
 
