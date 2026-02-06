@@ -215,7 +215,7 @@ class LineUserService {
     }
 
     /**
-     * 解除綁定（硬刪除，與 Nextend wp_social_users 一致）
+     * 解除綁定（硬刪除，同時刪除 buygo_line_users 和 NSL social_users）
      *
      * @since 2.0.0
      * @param int $user_id WordPress 使用者 ID
@@ -223,17 +223,45 @@ class LineUserService {
      */
     public static function unlinkUser(int $user_id): bool {
         global $wpdb;
+        $success = false;
+
+        // 刪除 wp_buygo_line_users 表的記錄
         $table_name = $wpdb->prefix . 'buygo_line_users';
+        $table_exists = $wpdb->get_var($wpdb->prepare("SHOW TABLES LIKE %s", $table_name)) === $table_name;
 
-        $result = $wpdb->delete(
-            $table_name,
-            [
-                'user_id' => $user_id,
-            ],
-            ['%d']
-        );
+        if ($table_exists) {
+            $result1 = $wpdb->delete(
+                $table_name,
+                ['user_id' => $user_id],
+                ['%d']
+            );
+            if ($result1 !== false) {
+                $success = true;
+                error_log("[LineUserService] Deleted from buygo_line_users for user {$user_id}");
+            }
+        }
 
-        return $result !== false;
+        // 同時刪除 NSL wp_social_users 表的 LINE 記錄
+        $nsl_table = $wpdb->prefix . 'social_users';
+        $nsl_table_exists = $wpdb->get_var($wpdb->prepare("SHOW TABLES LIKE %s", $nsl_table)) === $nsl_table;
+
+        if ($nsl_table_exists) {
+            // NSL 表的 ID 欄位是 WordPress User ID
+            $result2 = $wpdb->delete(
+                $nsl_table,
+                [
+                    'ID' => $user_id,
+                    'type' => 'line'
+                ],
+                ['%d', '%s']
+            );
+            if ($result2 !== false && $result2 > 0) {
+                $success = true;
+                error_log("[LineUserService] Deleted from social_users for user {$user_id}");
+            }
+        }
+
+        return $success;
     }
 
     /**
