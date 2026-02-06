@@ -108,6 +108,14 @@ class UserListColumn
             $display_name = \get_user_meta($user_id, 'buygo_line_display_name', true);
             $avatar_url = \get_user_meta($user_id, 'buygo_line_avatar_url', true);
 
+            // Fallback: 如果沒有存儲的名稱，使用用戶顯示名稱
+            if (empty($display_name)) {
+                $user = \get_user_by('id', $user_id);
+                if ($user) {
+                    $display_name = $user->display_name ?: 'LINE 用戶';
+                }
+            }
+
             $output = '<div style="display: flex; align-items: center; gap: 8px;">';
 
             // 顯示頭像
@@ -121,9 +129,10 @@ class UserListColumn
             $output .= '<div style="display: flex; flex-direction: column;">';
             $output .= '<span style="color: #06C755; font-weight: 500;">✓ ' . esc_html($display_name ?: 'LINE 用戶') . '</span>';
 
-            // 顯示綁定日期
-            if (!empty($line_data->link_date)) {
-                $link_date = date_i18n('Y-m-d', strtotime($line_data->link_date));
+            // 顯示綁定日期（支援多種欄位名稱）
+            $link_date_raw = $line_data->link_date ?? $line_data->updated_at ?? $line_data->created_at ?? null;
+            if (!empty($link_date_raw)) {
+                $link_date = date_i18n('Y-m-d', strtotime($link_date_raw));
                 $output .= '<span style="font-size: 11px; color: #666;">綁定於 ' . esc_html($link_date) . '</span>';
             }
 
@@ -229,27 +238,58 @@ class UserListColumn
         try {
             global $wpdb;
             $table_name = $wpdb->prefix . 'buygo_line_users';
+            $nsl_table = $wpdb->prefix . 'social_users';
 
             // 檢查資料表是否存在
             $table_exists = $wpdb->get_var($wpdb->prepare("SHOW TABLES LIKE %s", $table_name)) === $table_name;
-            if (!$table_exists) {
-                return; // 資料表不存在,跳過篩選
+            $nsl_table_exists = $wpdb->get_var($wpdb->prepare("SHOW TABLES LIKE %s", $nsl_table)) === $nsl_table;
+
+            if (!$table_exists && !$nsl_table_exists) {
+                return; // 兩個資料表都不存在,跳過篩選
             }
 
             if ($filter === 'linked') {
-                // 只顯示已綁定 LINE 的用戶
-                // 使用 WHERE EXISTS 避免與其他 hooks 的 JOIN 衝突
-                $query->query_where .= " AND EXISTS (
-                    SELECT 1 FROM {$table_name}
-                    WHERE {$table_name}.user_id = {$wpdb->users}.ID
-                )";
+                // 只顯示已綁定 LINE 的用戶（檢查兩個表）
+                $conditions = [];
+
+                if ($table_exists) {
+                    $conditions[] = "EXISTS (
+                        SELECT 1 FROM {$table_name}
+                        WHERE {$table_name}.user_id = {$wpdb->users}.ID
+                    )";
+                }
+
+                if ($nsl_table_exists) {
+                    $conditions[] = "EXISTS (
+                        SELECT 1 FROM {$nsl_table}
+                        WHERE {$nsl_table}.ID = {$wpdb->users}.ID AND {$nsl_table}.type = 'line'
+                    )";
+                }
+
+                if (!empty($conditions)) {
+                    $query->query_where .= " AND (" . implode(' OR ', $conditions) . ")";
+                }
             } elseif ($filter === 'not_linked') {
-                // 只顯示未綁定 LINE 的用戶
-                // 使用 WHERE NOT EXISTS 避免與其他 hooks 的 JOIN 衝突
-                $query->query_where .= " AND NOT EXISTS (
-                    SELECT 1 FROM {$table_name}
-                    WHERE {$table_name}.user_id = {$wpdb->users}.ID
-                )";
+                // 只顯示未綁定 LINE 的用戶（兩個表都沒有）
+                $conditions = [];
+
+                if ($table_exists) {
+                    $conditions[] = "NOT EXISTS (
+                        SELECT 1 FROM {$table_name}
+                        WHERE {$table_name}.user_id = {$wpdb->users}.ID
+                    )";
+                }
+
+                if ($nsl_table_exists) {
+                    $conditions[] = "NOT EXISTS (
+                        SELECT 1 FROM {$nsl_table}
+                        WHERE {$nsl_table}.ID = {$wpdb->users}.ID AND {$nsl_table}.type = 'line'
+                    )";
+                }
+
+                if (!empty($conditions)) {
+                    $query->query_where .= " AND " . implode(' AND ', $conditions);
+                }
             }
         } catch (\Exception $e) {
             error_log('BuyGo Line Notify - handle_line_filter error: ' . $e->getMessage());
