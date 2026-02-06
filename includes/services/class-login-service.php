@@ -392,12 +392,16 @@ class LoginService {
 					return $nsl_url;
 				}
 			}
-		} catch ( \Exception $e ) {
+		} catch ( \Throwable $e ) {
+			// PHP 7.0+ 使用 Throwable 同時捕捉 Exception 和 Error
+			// 這包括 Fatal Error（方法不存在、類別載入失敗等）
 			Logger::log_placeholder(
 				'warning',
 				array(
 					'message' => 'Failed to use NSL API, falling back to manual URL',
 					'error'   => $e->getMessage(),
+					'file'    => $e->getFile(),
+					'line'    => $e->getLine(),
 				)
 			);
 		}

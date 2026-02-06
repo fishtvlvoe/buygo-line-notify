@@ -188,16 +188,23 @@ class FluentCartIntegrationAPI {
 				],
 				200
 			);
-		} catch ( \Exception $e ) {
+		} catch ( \Throwable $e ) {
+			// PHP 7.0+ 使用 Throwable 同時捕捉 Exception 和 Error
 			\BuygoLineNotify\Logger::log_placeholder(
-				'產生 authorize URL 失敗: ' . $e->getMessage(),
-				'ERROR'
+				'error',
+				array(
+					'message' => '產生 authorize URL 失敗',
+					'error'   => $e->getMessage(),
+					'file'    => $e->getFile(),
+					'line'    => $e->getLine(),
+					'user_id' => $user_id,
+				)
 			);
 
 			return new \WP_REST_Response(
 				[
 					'success' => false,
-					'message' => '產生授權 URL 失敗',
+					'message' => '產生授權 URL 失敗：' . $e->getMessage(),
 				],
 				500
 			);
