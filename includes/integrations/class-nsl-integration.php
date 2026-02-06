@@ -65,6 +65,12 @@ class NSLIntegration
         // 這是最可靠的攔截點,在 NSL 嘗試創建用戶之前攔截
         // 參考: wp-content/plugins/nextend-facebook-connect/includes/user.php line 414
         add_filter('nsl_register_external_insert_user', [__CLASS__, 'intercept_registration_for_autolink'], 10, 3);
+
+        // Hook 8: 攔截 NSL PRO 的 Email 驗證錯誤 - 這是真正產生錯誤的地方！
+        // 當用戶手動輸入已存在的 Email 時,PRO 版會在此處加入 email_exists 錯誤
+        // 我們攔截這個錯誤,改為執行 auto_link
+        // 參考: nextend-social-login-pro/class-provider-extension.php line 308
+        add_filter('nsl_validate_extra_input_email_errors', [__CLASS__, 'handle_email_exists_error'], 10, 3);
     }
 
     /**
@@ -710,6 +716,178 @@ class NSLIntegration
             error_log('[NSL Integration] ❌ Failed to link LINE via intercept');
             // 返回原狀態,讓 NSL 繼續處理
             return $status;
+        }
+    }
+
+    /**
+     * 處理 NSL PRO 的 Email 已存在錯誤
+     *
+     * Hook: nsl_validate_extra_input_email_errors
+     *
+     * 這是 NSL PRO 版本中產生 "This email is already registered" 錯誤的地方
+     * 當用戶手動輸入已存在的 Email 時,我們攔截這個錯誤,改為執行 auto_link
+     *
+     * @param bool $hasError 是否有錯誤
+     * @param object $provider NSL Provider 物件
+     * @param WP_Error $errors 錯誤物件
+     * @return bool 返回 false 表示沒有錯誤,允許繼續
+     */
+    public static function handle_email_exists_error($hasError, $provider, $errors)
+    {
+        error_log('[NSL Integration] handle_email_exists_error() CALLED');
+        error_log('[NSL Integration] hasError: ' . var_export($hasError, true));
+        error_log('[NSL Integration] errors: ' . var_export($errors->get_error_codes(), true));
+
+        // 只處理 LINE provider
+        if (!method_exists($provider, 'getId') || $provider->getId() !== 'line') {
+            error_log('[NSL Integration] Not LINE provider, skipping');
+            return $hasError;
+        }
+
+        // 檢查是否是 email_exists 錯誤
+        if (!$errors->get_error_message('email_exists')) {
+            error_log('[NSL Integration] Not email_exists error, skipping');
+            return $hasError;
+        }
+
+        error_log('[NSL Integration] ⚡ Intercepting email_exists error!');
+
+        // 取得用戶輸入的 Email
+        $email = isset($_POST['user_email']) ? sanitize_email($_POST['user_email']) : '';
+        if (empty($email)) {
+            error_log('[NSL Integration] No email in POST, cannot auto_link');
+            return $hasError;
+        }
+
+        error_log('[NSL Integration] Email from form: ' . $email);
+
+        // 檢查現有用戶
+        $existing_user = get_user_by('email', $email);
+        if (!$existing_user) {
+            error_log('[NSL Integration] User not found, this should not happen');
+            return $hasError;
+        }
+
+        error_log('[NSL Integration] Found existing user: ' . $existing_user->ID);
+
+        // 取得 LINE User ID - 使用多種方法嘗試
+        $line_user_id = null;
+
+        // 方法 1：使用公開的 getAuthUserData('id') 方法
+        if (method_exists($provider, 'getAuthUserData')) {
+            $line_user_id = $provider->getAuthUserData('id');
+            if ($line_user_id) {
+                error_log('[NSL Integration] Got LINE ID from getAuthUserData: ' . substr($line_user_id, 0, 20) . '...');
+            }
+        }
+
+        // 方法 2：從 persistent data 取得（使用公開方法）
+        if (!$line_user_id && method_exists($provider, 'getLoginPersistentData')) {
+            $persistent = $provider->getLoginPersistentData();
+            error_log('[NSL Integration] Persistent data keys: ' . implode(', ', array_keys($persistent ?: [])));
+            if (isset($persistent['access_token_data']['id'])) {
+                $line_user_id = $persistent['access_token_data']['id'];
+                error_log('[NSL Integration] Got LINE ID from persistent data: ' . substr($line_user_id, 0, 20) . '...');
+            }
+        }
+
+        // 方法 3：從 transient 取得
+        if (!$line_user_id) {
+            $provider_id = $provider->getId();
+            $persistent_data = get_transient('nsl_' . $provider_id . '_persistent_data');
+            if ($persistent_data && isset($persistent_data['id'])) {
+                $line_user_id = $persistent_data['id'];
+                error_log('[NSL Integration] Got LINE ID from transient: ' . substr($line_user_id, 0, 20) . '...');
+            }
+        }
+
+        // 方法 4：從 $_SESSION 取得
+        if (!$line_user_id && isset($_SESSION['nsl_line_id'])) {
+            $line_user_id = $_SESSION['nsl_line_id'];
+            error_log('[NSL Integration] Got LINE ID from session: ' . substr($line_user_id, 0, 20) . '...');
+        }
+
+        if (!$line_user_id) {
+            error_log('[NSL Integration] Unable to get LINE ID through any method, cannot auto_link');
+            return $hasError;
+        }
+
+        error_log('[NSL Integration] Final LINE ID: ' . substr($line_user_id, 0, 20) . '...');
+
+        global $wpdb;
+
+        // 檢查並刪除舊的 LINE 綁定
+        $old_line_id = $wpdb->get_var($wpdb->prepare(
+            "SELECT identifier FROM {$wpdb->prefix}social_users
+             WHERE ID = %d AND type = 'line'",
+            $existing_user->ID
+        ));
+
+        if ($old_line_id && $old_line_id !== $line_user_id) {
+            error_log('[NSL Integration] Removing old LINE binding');
+            $wpdb->delete(
+                $wpdb->prefix . 'social_users',
+                ['ID' => $existing_user->ID, 'type' => 'line'],
+                ['%d', '%s']
+            );
+            $wpdb->delete(
+                $wpdb->prefix . 'buygo_line_users',
+                ['user_id' => $existing_user->ID],
+                ['%d']
+            );
+        }
+
+        // 執行綁定
+        $linked = false;
+        if (method_exists($provider, 'linkUserToProviderIdentifier')) {
+            $linked = $provider->linkUserToProviderIdentifier($existing_user->ID, $line_user_id, false);
+        }
+
+        if ($linked) {
+            error_log('[NSL Integration] ✅ Successfully linked LINE to existing user via email_exists intercept');
+
+            // 同步到 buygo_line_users
+            if (!$wpdb->get_var($wpdb->prepare(
+                "SELECT COUNT(*) FROM {$wpdb->prefix}buygo_line_users WHERE user_id = %d",
+                $existing_user->ID
+            ))) {
+                $wpdb->insert(
+                    $wpdb->prefix . 'buygo_line_users',
+                    [
+                        'type' => 'line',
+                        'identifier' => $line_user_id,
+                        'user_id' => $existing_user->ID,
+                        'register_date' => current_time('mysql'),
+                        'link_date' => current_time('mysql'),
+                    ],
+                    ['%s', '%s', '%d', '%s', '%s']
+                );
+            }
+
+            // 清除 WP_Error 中的錯誤
+            // 注意: WP_Error 沒有直接移除錯誤的方法
+            // 我們需要清空 errors 陣列
+            $reflection = new \ReflectionClass($errors);
+            $errors_prop = $reflection->getProperty('errors');
+            $errors_prop->setAccessible(true);
+            $errors_prop->setValue($errors, []);
+
+            $error_data_prop = $reflection->getProperty('error_data');
+            $error_data_prop->setAccessible(true);
+            $error_data_prop->setValue($errors, []);
+
+            // 登入用戶
+            wp_set_current_user($existing_user->ID);
+            wp_set_auth_cookie($existing_user->ID);
+
+            error_log('[NSL Integration] User logged in, redirecting to home');
+
+            // 重定向到首頁
+            wp_redirect(home_url());
+            exit;
+        } else {
+            error_log('[NSL Integration] ❌ Failed to link LINE via email_exists intercept');
+            return $hasError;
         }
     }
 
