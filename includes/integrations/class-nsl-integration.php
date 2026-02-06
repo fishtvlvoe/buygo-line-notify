@@ -55,6 +55,11 @@ class NSLIntegration
 
         // Hook 5: 允許 auto_link
         add_filter('nsl_line_auto_link_allowed', '__return_true', 999);
+
+        // Hook 6: 攔截手動輸入 Email 的註冊流程
+        // 當用戶手動輸入 Email 時,檢查是否已存在,改為執行 auto_link 而不是顯示錯誤
+        // 參考: wp-content/plugins/nextend-facebook-connect/includes/userData.php line 71
+        add_filter('nsl_registration_user_data', [__CLASS__, 'handle_manual_email_registration'], 5, 3);
     }
 
     /**
@@ -446,6 +451,131 @@ class NSLIntegration
 
         error_log('[NSL Integration] Returning user_id: ' . $user_id . ' to continue auto_link flow');
         return $user_id; // 返回用戶 ID,允許 auto_link 繼續
+    }
+
+    /**
+     * 處理手動輸入 Email 的註冊流程
+     *
+     * Hook: nsl_registration_user_data
+     *
+     * 當用戶的 LINE 沒有綁定 Email,NSL 會顯示表單要求手動輸入
+     * 如果輸入的 Email 已存在,不要顯示錯誤,而是執行 auto_link
+     *
+     * @param array $userData 用戶資料
+     * @param object $provider NSL Provider 物件
+     * @param WP_Error $errors 錯誤物件
+     * @return array 處理後的用戶資料
+     */
+    public static function handle_manual_email_registration($userData, $provider, $errors)
+    {
+        // 只處理 LINE provider
+        if (!method_exists($provider, 'getId') || $provider->getId() !== 'line') {
+            return $userData;
+        }
+
+        error_log('[NSL Integration] handle_manual_email_registration() CALLED');
+        error_log('[NSL Integration] userData: ' . var_export($userData, true));
+
+        // 檢查是否有 Email
+        if (empty($userData['email'])) {
+            error_log('[NSL Integration] No email in userData, skipping');
+            return $userData;
+        }
+
+        $email = $userData['email'];
+        error_log('[NSL Integration] Checking email: ' . $email);
+
+        // 檢查 Email 是否已存在
+        $existing_user = get_user_by('email', $email);
+
+        if (!$existing_user) {
+            error_log('[NSL Integration] Email not exists, allow registration');
+            return $userData;
+        }
+
+        error_log('[NSL Integration] Email exists! User ID: ' . $existing_user->ID);
+        error_log('[NSL Integration] Will trigger auto_link instead of showing error');
+
+        // Email 已存在,我們要觸發 auto_link 而不是註冊
+        // 方法: 攔截此處,然後手動觸發 autoLink 流程
+
+        global $wpdb;
+
+        // 取得 LINE User ID
+        $line_user_id = null;
+        if (method_exists($provider, 'getAccessTokenData')) {
+            $token_data = $provider->getAccessTokenData();
+            if (isset($token_data['id'])) {
+                $line_user_id = $token_data['id'];
+            }
+        }
+
+        if (!$line_user_id) {
+            error_log('[NSL Integration] Unable to get LINE user ID, cannot auto_link');
+            return $userData;
+        }
+
+        error_log('[NSL Integration] LINE ID: ' . substr($line_user_id, 0, 20) . '...');
+
+        // 檢查現有用戶是否已綁定其他 LINE 帳號
+        $old_line_id = $wpdb->get_var($wpdb->prepare(
+            "SELECT identifier FROM {$wpdb->prefix}social_users
+             WHERE ID = %d AND type = 'line'",
+            $existing_user->ID
+        ));
+
+        if ($old_line_id && $old_line_id !== $line_user_id) {
+            error_log('[NSL Integration] User has different LINE binding, removing old one');
+            // 刪除舊綁定
+            $wpdb->delete(
+                $wpdb->prefix . 'social_users',
+                ['ID' => $existing_user->ID, 'type' => 'line'],
+                ['%d', '%s']
+            );
+            // 清除 buygo_line_users
+            $wpdb->delete(
+                $wpdb->prefix . 'buygo_line_users',
+                ['user_id' => $existing_user->ID],
+                ['%d']
+            );
+        }
+
+        // 執行綁定
+        $linked = $provider->linkUserToProviderIdentifier($existing_user->ID, $line_user_id, false);
+
+        if ($linked) {
+            error_log('[NSL Integration] ✅ Successfully linked LINE to existing user');
+
+            // 同步到 buygo_line_users
+            if (!$wpdb->get_var($wpdb->prepare(
+                "SELECT COUNT(*) FROM {$wpdb->prefix}buygo_line_users WHERE user_id = %d",
+                $existing_user->ID
+            ))) {
+                $wpdb->insert(
+                    $wpdb->prefix . 'buygo_line_users',
+                    [
+                        'type' => 'line',
+                        'identifier' => $line_user_id,
+                        'user_id' => $existing_user->ID,
+                        'register_date' => current_time('mysql'),
+                        'link_date' => current_time('mysql'),
+                    ],
+                    ['%s', '%s', '%d', '%s', '%s']
+                );
+            }
+
+            // 登入用戶
+            wp_set_current_user($existing_user->ID);
+            wp_set_auth_cookie($existing_user->ID);
+
+            // 重定向到首頁
+            wp_redirect(home_url());
+            exit;
+        } else {
+            error_log('[NSL Integration] ❌ Failed to link LINE to existing user');
+            // 繼續正常流程,會顯示錯誤
+            return $userData;
+        }
     }
 
     /**

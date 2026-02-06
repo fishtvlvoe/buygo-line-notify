@@ -15,4 +15,10 @@
 | #1004 | 5:58 PM | 🟣 | Implemented Duplicate Email Auto-Linking Logic | ~495 |
 | #1001 | " | 🟣 | Added Hook Registrations for Duplicate Email Handling | ~354 |
 | #977 | 5:54 PM | 🔵 | BuyGo LINE Notify NSL Integration Architecture | ~451 |
+
+### Feb 7, 2026
+
+| ID | Time | T | Title | Read |
+|----|------|---|-------|------|
+| #1803 | 3:07 AM | 🟣 | Added Manual Email Registration Hook for NSL Auto-Link | ~335 |
 </claude-mem-context>
