@@ -388,12 +388,17 @@ class LoginService {
 						// 已登入用戶：使用 Connect URL
 						$nsl_url = $provider->getConnectUrl();
 
+						// 強制加入 prompt=consent,避免 NSL 跳過 OAuth 認證
+						// 這確保即使用戶已有綁定,也會跳轉到 LINE 認證頁面
+						$nsl_url = add_query_arg( 'prompt', 'consent', $nsl_url );
+
 						Logger::log_placeholder(
 							'info',
 							array(
 								'message' => 'NSL LINE connect URL generated (logged in user)',
 								'url'     => $nsl_url,
 								'user_id' => get_current_user_id(),
+								'forced_consent' => true,
 							)
 						);
 
@@ -403,11 +408,15 @@ class LoginService {
 						// 未登入用戶：使用 Login URL
 						$nsl_url = $provider->getLoginUrl();
 
+						// 強制加入 prompt=consent,避免 NSL 跳過 OAuth 認證
+						$nsl_url = add_query_arg( 'prompt', 'consent', $nsl_url );
+
 						Logger::log_placeholder(
 							'info',
 							array(
 								'message' => 'NSL LINE login URL generated via API',
 								'url'     => $nsl_url,
+								'forced_consent' => true,
 							)
 						);
 
@@ -434,6 +443,7 @@ class LoginService {
 		// NSL 的 connect 和 login 使用相同的 URL 格式，由 session 狀態決定
 		$params = array(
 			'loginSocial' => 'line',
+			'prompt'      => 'consent', // 強制重新授權
 		);
 
 		if ( ! empty( $redirect_url ) ) {
@@ -448,6 +458,7 @@ class LoginService {
 				'message' => "NSL LINE {$mode} URL generated manually",
 				'url'     => $nsl_url,
 				'is_logged_in' => $is_logged_in,
+				'forced_consent' => true,
 			)
 		);
 
