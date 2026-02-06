@@ -363,37 +363,39 @@ class LoginService {
 	/**
 	 * 產生 NSL LINE authorize URL
 	 *
-	 * 注意：直接使用手動構建的 URL，不使用 NSL 的 getConnectUrl/getLoginUrl
-	 * 原因：NSL 的這些方法會檢查用戶是否已綁定，如果已綁定會返回 bypass_cache URL
-	 * 而不是真正的 OAuth URL。我們需要強制觸發 OAuth 流程。
+	 * 對於已登入用戶，使用 action=link 參數觸發 NSL 的「連結帳號」流程
+	 * 對於未登入用戶，使用 loginSocial=line 觸發登入流程
 	 *
 	 * @param string $redirect_url 授權完成後的導向 URL
 	 * @return string NSL LINE authorize URL
 	 */
 	private function get_nsl_authorize_url( string $redirect_url ): string {
 		$is_logged_in = is_user_logged_in();
-		$mode = $is_logged_in ? 'connect' : 'login';
 
-		// 直接構建 NSL LINE 授權 URL
-		// 使用 loginSocial=line 參數觸發 NSL 的 LINE OAuth 流程
+		// 構建 NSL LINE 授權 URL
 		$params = array(
 			'loginSocial' => 'line',
-			'prompt'      => 'consent', // 強制重新授權，確保跳轉到 LINE 認證頁面
 		);
 
+		// 已登入用戶：使用 action=link 觸發「連結帳號」功能
+		// 這樣 NSL 不會 bypass，而是會執行 OAuth 流程來連結帳號
+		if ( $is_logged_in ) {
+			$params['action'] = 'link';
+		}
+
 		if ( ! empty( $redirect_url ) ) {
-			$params['redirect_to'] = $redirect_url;
+			$params['redirect'] = urlencode( $redirect_url );
 		}
 
 		$nsl_url = add_query_arg( $params, wp_login_url() );
 
+		$mode = $is_logged_in ? 'link' : 'login';
 		Logger::log_placeholder(
 			'info',
 			array(
-				'message'        => "NSL LINE {$mode} URL generated",
-				'url'            => $nsl_url,
-				'is_logged_in'   => $is_logged_in,
-				'forced_consent' => true,
+				'message'      => "NSL LINE {$mode} URL generated",
+				'url'          => $nsl_url,
+				'is_logged_in' => $is_logged_in,
 			)
 		);
 
