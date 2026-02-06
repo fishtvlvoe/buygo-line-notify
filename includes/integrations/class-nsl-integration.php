@@ -144,6 +144,46 @@ class NSLIntegration
     }
 
     /**
+     * 取得正確的重定向 URL
+     *
+     * 優先順序：
+     * 1. NSL Persistent 儲存的 redirect
+     * 2. $_GET['redirect'] 或 $_GET['redirect_to']
+     * 3. $_POST['redirect']
+     * 4. 首頁
+     *
+     * @return string 重定向 URL
+     */
+    private static function get_redirect_url(): string
+    {
+        $redirect_url = home_url();
+
+        // 嘗試從 NSL Persistent 取得
+        if (class_exists('NSL\\Persistent\\Persistent')) {
+            $nsl_redirect = \NSL\Persistent\Persistent::get('redirect');
+            if (!empty($nsl_redirect)) {
+                return sanitize_url($nsl_redirect);
+            }
+        }
+
+        // 嘗試從 $_GET 取得
+        if (!empty($_GET['redirect'])) {
+            return sanitize_url($_GET['redirect']);
+        }
+
+        if (!empty($_GET['redirect_to'])) {
+            return sanitize_url($_GET['redirect_to']);
+        }
+
+        // 嘗試從 $_POST 取得
+        if (!empty($_POST['redirect'])) {
+            return sanitize_url($_POST['redirect']);
+        }
+
+        return $redirect_url;
+    }
+
+    /**
      * NSL 登入成功後,確保資料同步到 wp_buygo_line_users
      *
      * Hook: nsl_login
@@ -579,8 +619,10 @@ class NSLIntegration
             wp_set_current_user($existing_user->ID);
             wp_set_auth_cookie($existing_user->ID);
 
-            // 重定向到首頁
-            wp_redirect(home_url());
+            // 重定向到原始頁面
+            $redirect_url = self::get_redirect_url();
+            error_log('[NSL Integration] Redirecting to: ' . $redirect_url);
+            wp_redirect($redirect_url);
             exit;
         } else {
             error_log('[NSL Integration] ❌ Failed to link LINE to existing user');
@@ -707,10 +749,10 @@ class NSLIntegration
             wp_set_current_user($existing_user->ID);
             wp_set_auth_cookie($existing_user->ID);
 
-            error_log('[NSL Integration] User logged in, redirecting to home');
-
-            // 重定向到首頁
-            wp_redirect(home_url());
+            // 重定向到原始頁面
+            $redirect_url = self::get_redirect_url();
+            error_log('[NSL Integration] User logged in, redirecting to: ' . $redirect_url);
+            wp_redirect($redirect_url);
             exit;
         } else {
             error_log('[NSL Integration] ❌ Failed to link LINE via intercept');
@@ -880,10 +922,10 @@ class NSLIntegration
             wp_set_current_user($existing_user->ID);
             wp_set_auth_cookie($existing_user->ID);
 
-            error_log('[NSL Integration] User logged in, redirecting to home');
-
-            // 重定向到首頁
-            wp_redirect(home_url());
+            // 重定向到原始頁面
+            $redirect_url = self::get_redirect_url();
+            error_log('[NSL Integration] User logged in, redirecting to: ' . $redirect_url);
+            wp_redirect($redirect_url);
             exit;
         } else {
             error_log('[NSL Integration] ❌ Failed to link LINE via email_exists intercept');
