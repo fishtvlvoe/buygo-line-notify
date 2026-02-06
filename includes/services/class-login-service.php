@@ -368,28 +368,51 @@ class LoginService {
 		// 使用 NSL 的 API 來生成正確的 URL
 		// NSL Pro 和 Free 版本都支援這個方法
 
+		// 檢查用戶是否已登入
+		$is_logged_in = is_user_logged_in();
+		$mode = $is_logged_in ? 'connect' : 'login';
+
 		try {
 			// 嘗試使用 NSL 的 Provider API
 			if ( class_exists( 'NextendSocialLogin' ) && method_exists( 'NextendSocialLogin', 'getProviderByType' ) ) {
 				$provider = \NextendSocialLogin::getProviderByType( 'line' );
 
-				if ( $provider && method_exists( $provider, 'getLoginUrl' ) ) {
+				if ( $provider ) {
 					// 設定 redirect_to 參數
 					if ( ! empty( $redirect_url ) ) {
 						$_REQUEST['redirect_to'] = $redirect_url;
 					}
 
-					$nsl_url = $provider->getLoginUrl();
+					// 根據用戶狀態使用不同的方法
+					if ( $is_logged_in && method_exists( $provider, 'getConnectUrl' ) ) {
+						// 已登入用戶：使用 Connect URL
+						$nsl_url = $provider->getConnectUrl();
 
-					Logger::log_placeholder(
-						'info',
-						array(
-							'message' => 'NSL LINE authorize URL generated via API',
-							'url'     => $nsl_url,
-						)
-					);
+						Logger::log_placeholder(
+							'info',
+							array(
+								'message' => 'NSL LINE connect URL generated (logged in user)',
+								'url'     => $nsl_url,
+								'user_id' => get_current_user_id(),
+							)
+						);
 
-					return $nsl_url;
+						return $nsl_url;
+
+					} elseif ( method_exists( $provider, 'getLoginUrl' ) ) {
+						// 未登入用戶：使用 Login URL
+						$nsl_url = $provider->getLoginUrl();
+
+						Logger::log_placeholder(
+							'info',
+							array(
+								'message' => 'NSL LINE login URL generated via API',
+								'url'     => $nsl_url,
+							)
+						);
+
+						return $nsl_url;
+					}
 				}
 			}
 		} catch ( \Throwable $e ) {
@@ -402,11 +425,13 @@ class LoginService {
 					'error'   => $e->getMessage(),
 					'file'    => $e->getFile(),
 					'line'    => $e->getLine(),
+					'mode'    => $mode,
 				)
 			);
 		}
 
 		// Fallback：手動構建 URL
+		// NSL 的 connect 和 login 使用相同的 URL 格式，由 session 狀態決定
 		$params = array(
 			'loginSocial' => 'line',
 		);
@@ -420,8 +445,9 @@ class LoginService {
 		Logger::log_placeholder(
 			'info',
 			array(
-				'message' => 'NSL LINE authorize URL generated manually',
+				'message' => "NSL LINE {$mode} URL generated manually",
 				'url'     => $nsl_url,
+				'is_logged_in' => $is_logged_in,
 			)
 		);
 
