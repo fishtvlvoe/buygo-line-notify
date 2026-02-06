@@ -340,6 +340,12 @@ class NSLIntegration
         error_log('[NSL Integration] user_id: ' . var_export($user_id, true));
         error_log('[NSL Integration] provider type: ' . (method_exists($provider, 'getId') ? $provider->getId() : 'unknown'));
 
+        // 記錄 NSL 從 LINE 取得的 Email
+        if (method_exists($user_data, 'getAuthUserData')) {
+            $email_from_line = $user_data->getAuthUserData('email');
+            error_log('[NSL Integration] Email from LINE OAuth: ' . var_export($email_from_line, true));
+        }
+
         // 只處理 LINE provider
         if (!method_exists($provider, 'getId') || $provider->getId() !== 'line') {
             error_log('[NSL Integration] Not LINE provider, skipping');
