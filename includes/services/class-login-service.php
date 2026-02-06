@@ -58,6 +58,10 @@ class LoginService {
 	/**
 	 * 產生 LINE Login authorize URL
 	 *
+	 * 優先順序：
+	 * 1. 使用 NSL (Nextend Social Login) 如果已啟用
+	 * 2. 使用 buygo-line-notify 自己的 LINE Login
+	 *
 	 * @param string|null $redirect_url 授權完成後的導向 URL（null 表示使用後台設定）
 	 * @param int|null    $user_id WordPress 使用者 ID（可選）
 	 * @return string LINE authorize URL
@@ -67,6 +71,19 @@ class LoginService {
 		if ( empty( $redirect_url ) ) {
 			$default_redirect = SettingsService::get( 'default_redirect_url', '' );
 			$redirect_url = ! empty( $default_redirect ) ? $default_redirect : home_url( '/my-account/' );
+		}
+
+		// 檢查是否使用 NSL（優先使用 NSL）
+		if ( $this->should_use_nsl() ) {
+			Logger::log_placeholder(
+				'info',
+				array(
+					'message'      => 'Using NSL for LINE Login',
+					'redirect_url' => $redirect_url,
+					'user_id'      => $user_id,
+				)
+			);
+			return $this->get_nsl_authorize_url( $redirect_url );
 		}
 
 		// 產生並儲存 state
@@ -313,5 +330,97 @@ class LoginService {
 		);
 
 		return $data;
+	}
+
+	/**
+	 * 檢查是否應該使用 NSL (Nextend Social Login)
+	 *
+	 * @return bool true 如果應該使用 NSL，否則 false
+	 */
+	private function should_use_nsl(): bool {
+		// 檢查 NSL 外掛是否啟用
+		if ( ! class_exists( 'NextendSocialLogin' ) ) {
+			return false;
+		}
+
+		// 檢查 LINE provider 是否啟用
+		// NSL 的 LINE provider class 通常是 NextendSocialProviderLINE
+		if ( ! class_exists( 'NextendSocialProviderLINE' ) ) {
+			return false;
+		}
+
+		// 檢查是否在設定中明確停用 NSL fallback
+		$disable_nsl = SettingsService::get( 'disable_nsl_fallback', false );
+		if ( $disable_nsl ) {
+			return false;
+		}
+
+		return true;
+	}
+
+	/**
+	 * 產生 NSL LINE authorize URL
+	 *
+	 * @param string $redirect_url 授權完成後的導向 URL
+	 * @return string NSL LINE authorize URL
+	 */
+	private function get_nsl_authorize_url( string $redirect_url ): string {
+		// 使用 NSL 的 API 來生成正確的 URL
+		// NSL Pro 和 Free 版本都支援這個方法
+
+		try {
+			// 嘗試使用 NSL 的 Provider API
+			if ( class_exists( 'NextendSocialLogin' ) && method_exists( 'NextendSocialLogin', 'getProviderByType' ) ) {
+				$provider = \NextendSocialLogin::getProviderByType( 'line' );
+
+				if ( $provider && method_exists( $provider, 'getLoginUrl' ) ) {
+					// 設定 redirect_to 參數
+					if ( ! empty( $redirect_url ) ) {
+						$_REQUEST['redirect_to'] = $redirect_url;
+					}
+
+					$nsl_url = $provider->getLoginUrl();
+
+					Logger::log_placeholder(
+						'info',
+						array(
+							'message' => 'NSL LINE authorize URL generated via API',
+							'url'     => $nsl_url,
+						)
+					);
+
+					return $nsl_url;
+				}
+			}
+		} catch ( \Exception $e ) {
+			Logger::log_placeholder(
+				'warning',
+				array(
+					'message' => 'Failed to use NSL API, falling back to manual URL',
+					'error'   => $e->getMessage(),
+				)
+			);
+		}
+
+		// Fallback：手動構建 URL
+		$params = array(
+			'loginSocial' => 'line',
+		);
+
+		if ( ! empty( $redirect_url ) ) {
+			$params['redirect_to'] = $redirect_url;
+		}
+
+		$nsl_url = add_query_arg( $params, wp_login_url() );
+
+		Logger::log_placeholder(
+			'info',
+			array(
+				'message' => 'NSL LINE authorize URL generated manually',
+				'url'     => $nsl_url,
+			)
+		);
+
+		return $nsl_url;
 	}
 }
